@@ -12,7 +12,7 @@ router.post(
   "/create",
   auth,
   async (req: Request, res: Response) => {
-    try{
+    try {
       const { order, markerPosition } = req.body;
       const orderModel: IOrder = await Order.create({ senderId: req.userId, totalPrice: order.totalPrice });
       let products: any[] = [];
@@ -30,7 +30,7 @@ router.post(
         lng: markerPosition.lng,
         orderId: orderModel._id
       })
-      res.send({message: "Successfully created new order"});
+      res.send({message: "Successfully created new order", newMarker: markerModel});
     } catch(error){
       console.error(error.message);
       res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).send("Server Error");

@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { Modal, Button, Input, Row, Col, Form, InputNumber, message } from 'antd';
+import { Modal, Button, Input, Row, Col, Form, message, Select } from 'antd';
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import ProductInfo from '../../models/ProductInfo';
 import deepClone from "lodash.clonedeep";
@@ -8,16 +8,27 @@ import cloneDeep from 'lodash.clonedeep';
 import axios from "axios";
 import { LayerContext } from '../../context/LayerContext';
 import { LatLngTuple } from 'leaflet';
-import useAddMarker from '../Map/hooks/useAddMarker';
 
 interface OrderFormProps {
   showOrderForm: boolean;
   setShowOrderForm: React.Dispatch<React.SetStateAction<boolean>>;
 }
+const { Option } = Select;
 
+const tipOptions = [
+  { value: 0.10, label: "10%"},
+  { value: 0.15, label: "15%"},
+  { value: 0.20, label: "20%"},
+  { value: 0.25, label: "25%"},
+  { value: 0.30, label: "30%"},
+  { value: 0.35, label: "35%"},
+  { value: 0.40, label: "40%"},
+  { value: 0.45, label: "45%"},
+  { value: 0.50, label: "50%"},
+  { value: "custom", label: "Custom"},
+]
 const OrderForm:React.FC<OrderFormProps> = (props: OrderFormProps) => {
-  const { point, setPoint, stateToken, orderMarkers, setOrderMarkers } = useContext(LayerContext);
-
+  const { point, setPoint, stateToken, allMarkers, setAllMarkers } = useContext(LayerContext);
   const [order, setOrder] = useState<Order>(new Order());
   const [form] = Form.useForm();
 
@@ -36,12 +47,16 @@ const OrderForm:React.FC<OrderFormProps> = (props: OrderFormProps) => {
             order: order,
             markerPosition: point.props.position
           },
+        }).then((response) => {
+          if (response.data.newMarker) {
+            const clonedMarkers: LatLngTuple[] = cloneDeep(allMarkers);
+            clonedMarkers.push(response.data.newMarker);
+            setAllMarkers(clonedMarkers);
+            setPoint([0,0]);
+            props.setShowOrderForm(false);
+          }
         });
 
-        const clonedMarkers: LatLngTuple[] = cloneDeep(orderMarkers);
-        clonedMarkers.push(point);
-        setOrderMarkers(clonedMarkers);
-        setPoint([0,0]);
 
         message.success({content: "Successfully created order! You will be notified when someone accepts it.", duration: 2});
       } else {
@@ -59,12 +74,25 @@ const OrderForm:React.FC<OrderFormProps> = (props: OrderFormProps) => {
     order.products.forEach(p => {
       newTotal += p.Price * p.Quantity;
     });
-    clonedOrder.totalPrice = newTotal;
+    clonedOrder.productsPrice = newTotal;
+    calculateNewTip(clonedOrder);
   }
+
+  const calculateNewTip = (clonedOrder: Order) => {
+    if (order.tipPercentage !== "custom") {
+      clonedOrder.tip = +(clonedOrder.productsPrice * +clonedOrder.tipPercentage).toFixed(2);
+    } else {
+      let newMinTip = +(clonedOrder.productsPrice * +tipOptions[0].value).toFixed(2);
+      if (newMinTip > clonedOrder.tip) {
+        clonedOrder.tip = newMinTip;
+      }
+    }
+    clonedOrder.totalPrice = +(clonedOrder.tip + clonedOrder.productsPrice).toFixed(2);
+  };
+
   const cancelOrder = () => {
     props.setShowOrderForm(false);
   }
-
   const addNewProduct = () => {
     let clonedOrder = deepClone(order);
     clonedOrder.addNewProduct();
@@ -93,7 +121,18 @@ const OrderForm:React.FC<OrderFormProps> = (props: OrderFormProps) => {
     clonedOrder.products.splice(productsIndex, 1);
     setOrder(clonedOrder);
   }
-
+  const handleTipSelectChange = (value: any) =>{
+    console.log(value);
+    let clonedOrder = cloneDeep(order);
+    if (value !== "custom") {
+      clonedOrder.tipPercentage = value;
+      clonedOrder.tip = +(clonedOrder.productsPrice * +clonedOrder.tipPercentage).toFixed(2);
+      calculateNewTotal(order, clonedOrder);
+    } else {
+      clonedOrder.tipPercentage = value;
+    }
+    setOrder(clonedOrder);
+  }
   if (props.showOrderForm) {
     return (
       <div>
@@ -117,7 +156,7 @@ const OrderForm:React.FC<OrderFormProps> = (props: OrderFormProps) => {
               form={form}
             >
             {order.products.map((product) => (
-              <div className="product-info">
+              <div key={product.Id} className="product-info">
                 <Row>
                   <Col span={13}>
                     { order.products.length > 1
@@ -144,6 +183,7 @@ const OrderForm:React.FC<OrderFormProps> = (props: OrderFormProps) => {
                       <Input
                         min={1}
                         max={999} 
+                        defaultValue={1}
                         name={`Quantity-${product.Id}`}
                         type="number" 
                         suffix="Qty." 
@@ -163,7 +203,17 @@ const OrderForm:React.FC<OrderFormProps> = (props: OrderFormProps) => {
                         name={`Price-${product.Id}`}
                         type="number"
                         suffix="BGN"
-                        value={product.Price} onChange={(value) => handleProductInfoChange(value, product)}
+                        value={product.Price}
+                        onChange={(value) => handleProductInfoChange(value, product)}
+                        onKeyPress={(event: any) => {
+                          const value = event.target.value;
+                          if ((event.which !== 46 || value.indexOf('.') !== -1) && (event.which < 48 || event.which > 57)) {
+                            event.preventDefault();
+                          }
+                          if (value.indexOf(".") >-1 && (value.split('.')[1].length > 1))		{
+                              event.preventDefault();
+                          }
+                        }}
                       />
                     </Form.Item>
                   </Col>
@@ -178,7 +228,45 @@ const OrderForm:React.FC<OrderFormProps> = (props: OrderFormProps) => {
               </Col>
             </Row>
             <Row className="">
-            <Col span={2} offset={16}>
+              <Col span={3} offset={15}>
+                <div className="tip-row"><span className="tip-label">Products:</span></div>
+              </Col>
+              <Col span={6}>
+              <Input
+                disabled={true}
+                suffix="BGN"
+                value={order.productsPrice}
+              />
+              </Col>
+            </Row>
+            <Row className="">
+              <Col span={2} offset={10}>
+                <div className="tip-row"><span className="tip-label">Tip:</span></div>
+              </Col>
+              <Col span={6} >
+                <Select className="select-tip" defaultValue={0.15}  onChange={handleTipSelectChange}>
+                  {tipOptions.map(tip => (
+                    <Option value={tip.value}>{tip.label}</Option>
+                  ))}
+                </Select>
+              </Col>
+              <Col span={6}>
+                  <Input
+                    disabled={order.tipPercentage !== "custom"}
+                    min={order.tipPercentage === "custom" ? order.productsPrice * +tipOptions[0].value : undefined}
+                    type="number"
+                    suffix="BGN"
+                    value={order.tip}
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                      let clonedOrder = cloneDeep(order);
+                      clonedOrder.tip = +(+event.target.value).toFixed(2);
+                      setOrder(clonedOrder);
+                    }}
+                  />
+              </Col>
+            </Row>
+            <Row className="">
+              <Col span={2} offset={16}>
                 <div className="total-row"><span className="total-label">Total:</span></div>
               </Col>
               <Col span={6}>

@@ -3,7 +3,6 @@ import { LeafletMap } from "./components/Map/Map";
 import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
 import { LoginForm } from './components/Login/LoginForm';
 import { RegisterForm } from './components/Register/RegisterForm';
-import { Navigation } from './components/Navigation/Navigation';
 import { LayerContextProvider } from './context/LayerContext';
 
 function App() {
