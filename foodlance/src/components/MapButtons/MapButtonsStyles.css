@@ -1,0 +1,19 @@
+.addButton {
+  position: absolute;
+  top: 10px;
+  left: 50px;
+  z-index:2000;
+  width:100px;
+  height:50px;
+  color:gray;
+}
+.confirmButton {
+  position: absolute;
+  top: 10px;
+  left: 160px;
+  z-index:2000;
+  width:100px;
+  height:50px;
+  color:gray;
+}
+

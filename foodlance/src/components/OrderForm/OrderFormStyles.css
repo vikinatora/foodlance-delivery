@@ -1,0 +1,29 @@
+.anticon-plus {
+  font-size: 18px;
+  top: -3px;
+  position: relative;
+}
+
+.product-info {
+  margin-bottom: 5px;
+  height: 30px;
+}
+.buttonsRow{
+  margin-top: 25px;
+}
+.total-label {
+  line-height: 32px;
+  vertical-align: middle;
+}
+.total-row {
+  height: 32px;
+}
+.ant-input-suffix, .ant-input[disabled] {
+  color: rgba(0, 0, 0, 0.65) !important;
+}
+.deleteIcon {
+  position: absolute;
+  left: -18px;
+  top: 10px;
+  color: #d11a2a;
+}
