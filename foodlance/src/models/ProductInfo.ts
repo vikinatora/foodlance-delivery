@@ -1,11 +1,13 @@
-export default class ProductInfo {
+import IProductInfo from "./IProductInfo";
+
+export default class ProductInfo implements IProductInfo {
 
   constructor(id: number) {
-    this.Id = id;
+    this.id = id;
   }
 
-  Id: number;
-  Name: string = "";
-  Quantity: number = 1;
-  Price: number = 0;
+  id: number;
+  name: string = "";
+  quantity: number = 1;
+  price: number = 0;
 }

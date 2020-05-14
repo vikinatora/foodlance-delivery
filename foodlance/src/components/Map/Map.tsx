@@ -6,11 +6,13 @@ import { LayerContext } from '../../context/LayerContext';
 import MapButtons from '../MapButtons/MapButtons';
 import OrderForm from '../OrderForm/OrderForm';
 import { Navigation } from '../Navigation/Navigation';
+import { IMapOrder } from '../../models/IMapOrder';
+import { OrderInfoPopup } from '../OrderInfoPopup/OrderInfoPopup';
 
 const zoom: number = 15;
 
 export const LeafletMap:React.FC = () => {
-  const { point, allMarkers } = useContext(LayerContext);
+  const { point, allOrders } = useContext(LayerContext);
   const [coordinates, setCoordinate] = useState<LatLngTuple>([0, 0])
   const [showOrderForm, setShowOrderForm] = useState<boolean>(false)
   useEffect(() => {
@@ -27,13 +29,13 @@ export const LeafletMap:React.FC = () => {
         <MapButtons setShowOrderForm={setShowOrderForm} />
         <LayerGroup>
           {point}
-          {allMarkers.map((marker: any) => (
+          {(allOrders || []).map((order: IMapOrder) => (
             <Marker
-              key={marker.orderId}
-              position={[marker.lat, marker.lng]}
+              key={order.order.id}
+              position={[order.marker.lat, order.marker.lng]}
             >
-              <Popup>Popup for Marker</Popup>
-              <Tooltip>Tooltip for Marker</Tooltip>
+              <OrderInfoPopup order={order}/>
+            <Tooltip>{`Tip: ${order.order.tip}lv. | Total cost: ${order.order.totalPrice}lv.`}</Tooltip>
             </Marker>
           ))}
         </LayerGroup>

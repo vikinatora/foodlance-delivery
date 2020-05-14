@@ -37,12 +37,12 @@ export const Navigation: React.FC<INavigationProps> = () => {
     }, [token])
     return (
         <Row>
-            <Col span={!firstName || !token ? 21 : 20}>
+            <Col span={!firstName || !token ? 20 : 19}>
                 <Menu mode="horizontal">
                     <Menu.Item><Link to="/">Foodlance</Link></Menu.Item>
                 </Menu>
             </Col>
-            <Col span={!firstName || !token ? 3 : 4}>
+            <Col span={!firstName || !token ? 4 : 5}>
                 {
                     !firstName || !token
                     ? <Menu className="rightMenu" mode="horizontal">

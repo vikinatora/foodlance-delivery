@@ -72,7 +72,7 @@ const OrderForm:React.FC<OrderFormProps> = (props: OrderFormProps) => {
   const calculateNewTotal = (order: Order, clonedOrder: Order) => {
     let newTotal = 0;
     order.products.forEach(p => {
-      newTotal += p.Price * p.Quantity;
+      newTotal += p.price * p.quantity;
     });
     clonedOrder.productsPrice = newTotal;
     calculateNewTip(clonedOrder);
@@ -102,22 +102,22 @@ const OrderForm:React.FC<OrderFormProps> = (props: OrderFormProps) => {
   const handleProductInfoChange = ( event: React.ChangeEvent<HTMLInputElement>, product: ProductInfo) => {
     let clonedOrder = deepClone(order);
     if(event.target.name.indexOf("Name") >=0) {
-      product.Name = event.target.value;
+      product.name = event.target.value;
     } else if (event.target.name.startsWith("Quantity") && +event.target.value >=0 ) {
-      product.Quantity = +event.target.value;
+      product.quantity = +event.target.value;
       calculateNewTotal(order, clonedOrder);
     } else if(event.target.name.startsWith("Price") && +event.target.value >=0) {
-      product.Price = +event.target.value;
+      product.price = +event.target.value;
       calculateNewTotal(order, clonedOrder);
     }
-    let productIndex = clonedOrder.products.findIndex(p => p.Id === product.Id)
+    let productIndex = clonedOrder.products.findIndex(p => p.id === product.id)
     clonedOrder.products.splice(productIndex, 1, product); 
     setOrder(clonedOrder);
   }
 
   const removeProduct = (productId: number) => {
     const clonedOrder = cloneDeep(order);
-    const productsIndex = clonedOrder.products.map(p => p.Id).indexOf(productId);
+    const productsIndex = clonedOrder.products.map(p => p.id).indexOf(productId);
     clonedOrder.products.splice(productsIndex, 1);
     setOrder(clonedOrder);
   }
@@ -156,54 +156,53 @@ const OrderForm:React.FC<OrderFormProps> = (props: OrderFormProps) => {
               form={form}
             >
             {order.products.map((product) => (
-              <div key={product.Id} className="product-info">
+              <div key={product.id} className="product-info">
                 <Row>
                   <Col span={13}>
                     { order.products.length > 1
-                      ? <DeleteOutlined className="deleteIcon"  onClick={() => removeProduct(product.Id)}/>
+                      ? <DeleteOutlined className="deleteIcon"  onClick={() => removeProduct(product.id)}/>
                       : null
                     }
                     <Form.Item
-                      name={`Name-${product.Id}`}
+                      name={`Name-${product.id}`}
                       rules={[{ required: true, message: 'Please type in product name' }]}
                     >
                       <Input
-                      name={`Name-${product.Id}`}
+                      name={`Name-${product.id}`}
                       placeholder="Product" 
-                      value={product.Name} 
+                      value={product.name} 
                       onChange={(value) => handleProductInfoChange(value, product)}
                     />
                     </Form.Item>
                   </Col>
                   <Col span={5}>
                     <Form.Item
-                      name={`Quantity-${product.Id}`}
+                      name={`Quantity-${product.id}`}
                       rules={[{ pattern:new RegExp(/([0-9]*[.])?[0-9]+/), required:true, message: 'Invalid number' }]}
                     >
                       <Input
                         min={1}
                         max={999} 
-                        defaultValue={1}
-                        name={`Quantity-${product.Id}`}
+                        name={`Quantity-${product.id}`}
                         type="number" 
                         suffix="Qty." 
-                        value={product.Quantity} 
+                        value={product.quantity} 
                         onChange={(value) => handleProductInfoChange(value, product)}
                       />
                     </Form.Item>
                   </Col>
                   <Col span={6}>
                     <Form.Item
-                      name={`Price-${product.Id}`}
+                      name={`Price-${product.id}`}
                       rules={[{ pattern:new RegExp(/([0-9]*[.])?[0-9]+/), required: true, message: 'Invalid number' }]}
                     >
                       <Input
                         min={1} max={999}
                         placeholder="Price"
-                        name={`Price-${product.Id}`}
+                        name={`Price-${product.id}`}
                         type="number"
                         suffix="BGN"
-                        value={product.Price}
+                        value={product.price}
                         onChange={(value) => handleProductInfoChange(value, product)}
                         onKeyPress={(event: any) => {
                           const value = event.target.value;

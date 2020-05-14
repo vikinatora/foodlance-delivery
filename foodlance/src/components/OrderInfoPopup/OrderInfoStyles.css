@@ -1,0 +1,11 @@
+.button-section {
+  text-align: center;
+}
+
+.leaflet-popup-content-wrapper {
+  min-width: 270px !important;
+}
+
+.leaflet-popup-content {
+  width: 90% !important;
+}

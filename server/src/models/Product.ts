@@ -20,11 +20,6 @@ const productSchema: Schema = new Schema({
     type: Schema.Types.Number,
     required: true,
   },
-  orderId: {
-    type: Schema.Types.ObjectId,
-    ref: "Orders",
-    required: true,
-  },
 });
 
 const Product: Model<IProduct> = model("Product", productSchema);

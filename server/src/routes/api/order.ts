@@ -14,27 +14,50 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const { order, markerPosition } = req.body;
-      const orderModel: IOrder = await Order.create({ senderId: req.userId, totalPrice: order.totalPrice });
       let products: any[] = [];
-      order.products.forEach(async (product: any) => {
+      order.products.forEach((product: any) => {
         products.push({
           name: product.Name,
           price: product.Price,
           quantity: product.Quantity,
-          orderId: orderModel._id,
         })
       });
       let productsModels: IProduct[] = await Product.create(products);
       const markerModel: IMarker = await Marker.create({
         lat: markerPosition.lat,
         lng: markerPosition.lng,
-        orderId: orderModel._id
       })
+      const orderModel: IOrder = await Order.create({ 
+        sender: req.userId,
+        totalPrice: order.totalPrice,
+        tip: order.tip,
+        tipPercentage: order.tipPercentage,
+        marker: markerModel._id
+      });
+      productsModels.forEach(async (product) => {
+        await Order.findByIdAndUpdate(orderModel._id, {
+          $push: {
+            products: product
+          }
+        })
+      });
       res.send({message: "Successfully created new order", newMarker: markerModel});
     } catch(error){
       console.error(error.message);
       res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).send("Server Error");
     }
-  })
+  });
 
+  router.get(
+    "/getAll",
+    async (req: Request, res: Response) => {
+      try {
+        const orders = await Order.find({active: true}).populate("products").populate("marker").populate("sender");        
+        res.send(orders);
+      } catch (error){
+        console.error(error.message);
+        res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).send("Server Error");
+      }
+    })
+  
   export default router;
