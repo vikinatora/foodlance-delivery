@@ -7,5 +7,5 @@ export interface IMapOrder {
   marker: IMarker;
   products: ProductInfo[];
   order: IOrder;
-  sender: IUser;
+  requestor: IUser;
 }

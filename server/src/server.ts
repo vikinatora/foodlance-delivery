@@ -6,6 +6,7 @@ import auth from "./routes/api/auth";
 import user from "./routes/api/user";
 import order from "./routes/api/order";
 import marker from "./routes/api/marker";
+import notification from "./routes/api/notification";
 
 import cors from "cors";
 
@@ -33,6 +34,7 @@ app.use("/api/auth", auth);
 app.use("/api/user", user);
 app.use("/api/order", order);
 app.use("/api/marker", marker);
+app.use("/api/notification", notification);
 
 
 const port = app.get("port");

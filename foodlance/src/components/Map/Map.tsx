@@ -8,20 +8,38 @@ import OrderForm from '../OrderForm/OrderForm';
 import { Navigation } from '../Navigation/Navigation';
 import { IMapOrder } from '../../models/IMapOrder';
 import { OrderInfoPopup } from '../OrderInfoPopup/OrderInfoPopup';
+import { UserService } from '../../services/userService';
+import { message, notification, Progress, Button } from 'antd';
+import { NotificationService } from '../../services/notificationService';
 
 const zoom: number = 15;
 
 export const LeafletMap:React.FC = () => {
   const { point, allOrders } = useContext(LayerContext);
-  const [coordinates, setCoordinate] = useState<LatLngTuple>([0, 0])
-  const [showOrderForm, setShowOrderForm] = useState<boolean>(false)
+  const [coordinates, setCoordinate] = useState<LatLngTuple>([0, 0]);
+  const [showOrderForm, setShowOrderForm] = useState<boolean>(false);
+  const [userId, setUserId] = useState<string>("");
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition((position) => {
-      setCoordinate([position.coords.latitude, position.coords.longitude]);
-    }, () => {
-      console.log("Couldn't get location");
-    });
+    const getUserId = async () => {
+      const id = await UserService.getUserId();
+      setUserId(id);
+    };
+
+    const getUserLocation = () => {
+      navigator.geolocation.getCurrentPosition((position) => {
+        setCoordinate([position.coords.latitude, position.coords.longitude]);
+      },
+      () => {
+        message.error("Couldn't get location...");
+      });
+    };
+
+    getUserLocation();
+    getUserId();
   }, [])
+  
+
+
    return (
      <>
       <Navigation/>
@@ -34,7 +52,7 @@ export const LeafletMap:React.FC = () => {
               key={order.order.id}
               position={[order.marker.lat, order.marker.lng]}
             >
-              <OrderInfoPopup order={order}/>
+            <OrderInfoPopup userId={userId} order={order}/>
             <Tooltip>{`Tip: ${order.order.tip}lv. | Total cost: ${order.order.totalPrice}lv.`}</Tooltip>
             </Marker>
           ))}

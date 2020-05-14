@@ -5,6 +5,7 @@ import auth from "../../middleware/auth";
 import Order, { IOrder } from "../../models/Order";
 import Marker, { IMarker } from "../../models/Marker";
 import Product, { IProduct } from "../../models/Product";
+import User, { IUser } from "../../models/User";
 
 const router: Router = Router();
 
@@ -17,9 +18,9 @@ router.post(
       let products: any[] = [];
       order.products.forEach((product: any) => {
         products.push({
-          name: product.Name,
-          price: product.Price,
-          quantity: product.Quantity,
+          name: product.name,
+          price: product.price,
+          quantity: product.quantity,
         })
       });
       let productsModels: IProduct[] = await Product.create(products);
@@ -28,7 +29,7 @@ router.post(
         lng: markerPosition.lng,
       })
       const orderModel: IOrder = await Order.create({ 
-        sender: req.userId,
+        requestor: req.userId,
         totalPrice: order.totalPrice,
         tip: order.tip,
         tipPercentage: order.tipPercentage,
@@ -41,23 +42,84 @@ router.post(
           }
         })
       });
-      res.send({message: "Successfully created new order", newMarker: markerModel});
+      const completeOrder = await Order.findById(orderModel._id).populate("marker").populate("requestor").populate("products");
+      completeOrder.products = productsModels;
+      res.send({success: true, message: "Successfully created new order", newOrder: completeOrder});
     } catch(error){
       console.error(error.message);
       res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).send("Server Error");
+      res.send({success: false, message: "Couldn't create new order"});
     }
-  });
+});
 
-  router.get(
-    "/getAll",
-    async (req: Request, res: Response) => {
-      try {
-        const orders = await Order.find({active: true}).populate("products").populate("marker").populate("sender");        
-        res.send(orders);
-      } catch (error){
-        console.error(error.message);
-        res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).send("Server Error");
+router.get(
+  "/getAll",
+  async (req: Request, res: Response) => {
+    try {
+      //TODO: Show inactive only if you are the requestor
+      const orders = await Order.find().populate("products").populate("marker").populate("requestor");        
+      res.send(orders);
+    } catch (error){
+      console.error(error.message);
+      res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).send("Server Error");
+    }
+})
+
+router.post(
+  "/accept",
+  auth,
+  async (req: Request, res: Response) => {
+    try {
+      const { orderId, userId } = req.body;
+      const user = await User.findById(userId);
+      if( user.acceptedOrder && user.acceptedOrder._id === orderId) {
+        res.send({success: false, message: "Cannot accept more than one order."});
+        return;
       }
-    })
+      await Order.findByIdAndUpdate(orderId, {
+        $set: {
+            executor: userId,
+            active: false,
+            inProgress: true,
+          }
+      });
+      await User.findByIdAndUpdate(userId, {
+        $set: {
+          acceptedOrder: orderId
+        }
+      })
+      res.send({success: true, message: "Successfully accepted order"});
+    } catch(error) {
+      console.error(error.message);
+      res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).send("Server Error");
+      res.send({success: false, message: "Unexpected error occured while acceptiong order. Please try again."});
+
+    }
+  }
+)
+
+router.post(
+  "/cancel",
+  auth,
+  async (req: Request, res: Response) => {
+    try {
+      const { orderId, userId } = req.body;
+      await Order.findByIdAndUpdate(orderId, {
+        $set: {
+            executor: null,
+            active: true,
+            inProgress: false,
+
+          }
+      })
+      res.send({success: true, message: "Successfully canceled order"});
+    } catch(error) {
+      console.error(error.message);
+      res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).send("Server Error");
+      res.send({success: false, message: "Couldn't cancel order"});
+    }
+  }
+)
+
   
-  export default router;
+export default router;

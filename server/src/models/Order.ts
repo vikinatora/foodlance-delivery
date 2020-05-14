@@ -1,13 +1,17 @@
 import { Document, Schema, Model, model } from "mongoose";
 
 export interface IOrder extends Document {
-  sender: any,
+  requestor: any,
   executor: any,
   totalPrice: number,
   tipPercentage: number,
   tip: number,
   products: any[],
   marker: any,
+  active: boolean,
+  inProgress: boolean,
+  completed: boolean,
+  sentNotification: boolean
 }
 
 const orderSchema: Schema = new Schema({
@@ -33,7 +37,7 @@ const orderSchema: Schema = new Schema({
     ref: "Marker",
     required: true,
   },
-  sender: {
+  requestor: {
     type: Schema.Types.ObjectId,
     ref: "User",
     required: true,
@@ -47,6 +51,21 @@ const orderSchema: Schema = new Schema({
     type: Schema.Types.Boolean,
     required: true,
     default: true
+  },
+  inProgress: {
+    type: Schema.Types.Boolean,
+    required: true,
+    default: false
+  },
+  completed: {
+    type: Schema.Types.Boolean,
+    required: true,
+    default: false
+  },
+  sentNotification: {
+    type: Schema.Types.Boolean,
+    required: true,
+    default: false
   },
 });
 

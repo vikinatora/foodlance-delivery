@@ -3,6 +3,7 @@ import { LatLngTuple } from 'leaflet';
 import axios from "axios";
 import { IMarker } from '../models/IMarker';
 import { IMapOrder } from '../models/IMapOrder';
+import { OrderHelpers } from '../helpers/OrderHelper';
 const LayerContext: any = React.createContext({});
 
 
@@ -31,32 +32,7 @@ const LayerContext: any = React.createContext({});
           method: "GET"
         }).then((response) => {
           response.data.forEach((order: any) => {
-            clientOrder.push({
-              order: {
-                totalPrice: order.totalPrice,
-                tip: order.tip,
-                tipPercentage: order.tipPercentage,
-                id: order._id
-              },
-              sender: {
-                firstName: order.sender.firstName,
-                id: order.sender._id,
-                lastName: order.sender.lastName
-              },
-              marker: {
-                lat: order.marker.lat,
-                lng: order.marker.lng
-              },
-              products: order.products.length 
-              ? order.products.map((p: any) => {
-                return { 
-                  name: p.name, 
-                  price: p.price, 
-                  quantity: p.quantity
-                }
-              })
-              : null,
-            })
+            clientOrder.push(OrderHelpers.mapDbToClientModel(order));
             setAllOrders(clientOrder);        
           });
         });

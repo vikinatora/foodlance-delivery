@@ -5,6 +5,7 @@ export interface IUser extends Document {
   firstName: string;
   lastName: string;
   password: string;
+  acceptedOrder: any;
 }
 
 const userSchema: Schema = new Schema({
@@ -28,7 +29,17 @@ const userSchema: Schema = new Schema({
   date: {
     type: Date,
     default: Date.now
-  }
+  },
+  tips: {
+    type: Number,
+    default: 0.00,
+    required: true,
+  },
+  acceptedOrder: {
+    type: Schema.Types.ObjectId,
+    ref: "Order",
+    required: false,
+  },
 });
 
 const User: Model<IUser> = model("User", userSchema);

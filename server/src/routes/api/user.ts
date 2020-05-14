@@ -4,6 +4,7 @@ import { Router, Response } from "express";
 import { validationResult } from "express-validator/check";
 import HttpStatusCodes from "http-status-codes";
 import jwt from "jsonwebtoken";
+import auth from "../../middleware/auth";
 
 import Payload from "../../types/Payload";
 import Request from "../../types/Request";
@@ -71,5 +72,13 @@ router.post(
     }
   }
 );
+
+router.get(
+  "/getId",
+  auth,
+  async (req: Request, res: Response) => {
+    res.send(req.userId);
+  }
+)
 
 export default router;

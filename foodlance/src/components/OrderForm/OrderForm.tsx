@@ -8,6 +8,8 @@ import cloneDeep from 'lodash.clonedeep';
 import axios from "axios";
 import { LayerContext } from '../../context/LayerContext';
 import { LatLngTuple } from 'leaflet';
+import { IMapOrder } from '../../models/IMapOrder';
+import { OrderHelpers } from '../../helpers/OrderHelper';
 
 interface OrderFormProps {
   showOrderForm: boolean;
@@ -27,8 +29,8 @@ const tipOptions = [
   { value: 0.50, label: "50%"},
   { value: "custom", label: "Custom"},
 ]
-const OrderForm:React.FC<OrderFormProps> = (props: OrderFormProps) => {
-  const { point, setPoint, stateToken, allMarkers, setAllMarkers } = useContext(LayerContext);
+const OrderForm: React.FC<OrderFormProps> = (props: OrderFormProps) => {
+  const { point, setPoint, stateToken, allOrders, setAllOrders } = useContext(LayerContext);
   const [order, setOrder] = useState<Order>(new Order());
   const [form] = Form.useForm();
 
@@ -48,15 +50,14 @@ const OrderForm:React.FC<OrderFormProps> = (props: OrderFormProps) => {
             markerPosition: point.props.position
           },
         }).then((response) => {
-          if (response.data.newMarker) {
-            const clonedMarkers: LatLngTuple[] = cloneDeep(allMarkers);
-            clonedMarkers.push(response.data.newMarker);
-            setAllMarkers(clonedMarkers);
+          if (response.data.success) {
+            const clonedMarkers: IMapOrder[] = cloneDeep(allOrders);
+            clonedMarkers.push(OrderHelpers.mapDbToClientModel(response.data.newOrder));
+            setAllOrders(clonedMarkers);
             setPoint([0,0]);
             props.setShowOrderForm(false);
           }
         });
-
 
         message.success({content: "Successfully created order! You will be notified when someone accepts it.", duration: 2});
       } else {

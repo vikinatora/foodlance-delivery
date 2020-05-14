@@ -39,6 +39,7 @@ export const LoginForm: React.FC<LoginProps> = (props: LoginProps) => {
       setToken(result.data.token);
       // TODO: Set token in session storage if remember me is not checked
       localStorage.setItem("token", result.data.token);
+
       setTimeout(() => {
         message.success({content: "Successfully logged in! Redirecting to login page...", key, duration: 2})
       }, 1000);
