@@ -8,4 +8,5 @@ export interface IMapOrder {
   products: ProductInfo[];
   order: IOrder;
   requestor: IUser;
+  executor?: IUser;
 }

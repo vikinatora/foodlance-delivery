@@ -57,7 +57,7 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       //TODO: Show inactive only if you are the requestor
-      const orders = await Order.find().populate("products").populate("marker").populate("requestor");        
+      const orders = await Order.find({active: true}).populate("products").populate("marker").populate("requestor");        
       res.send(orders);
     } catch (error){
       console.error(error.message);
@@ -79,7 +79,6 @@ router.post(
       await Order.findByIdAndUpdate(orderId, {
         $set: {
             executor: userId,
-            active: false,
             inProgress: true,
           }
       });
@@ -121,5 +120,26 @@ router.post(
   }
 )
 
+router.post(
+  "/remove",
+  auth,
+  async (req: Request, res: Response) => {
+    try {
+      const { orderId, userId } = req.body;
+      await Order.findByIdAndUpdate(orderId, {
+        $set: {
+            executor: null,
+            active: false,
+            inProgress: false,
+          }
+      })
+      res.send({success: true, message: "Successfully removed order"});
+    } catch(error) {
+      console.error(error.message);
+      res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).send("Server Error");
+      res.send({success: false, message: "Couldn't cancel order"});
+    }
+  }
+)
   
 export default router;

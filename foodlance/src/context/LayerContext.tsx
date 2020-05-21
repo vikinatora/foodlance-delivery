@@ -26,14 +26,14 @@ const LayerContext: any = React.createContext({});
 
     useEffect(() => {
       const getMarkers = async () => {
-        let clientOrder: IMapOrder[] = [];
+        let clientOrders: IMapOrder[] = [];
         await axios({
           url: "http://localhost:5000/api/order/getAll",
           method: "GET"
         }).then((response) => {
           response.data.forEach((order: any) => {
-            clientOrder.push(OrderHelpers.mapDbToClientModel(order));
-            setAllOrders(clientOrder);        
+            clientOrders.push(OrderHelpers.mapDbToClientModel(order));
+            setAllOrders(clientOrders);        
           });
         });
       }

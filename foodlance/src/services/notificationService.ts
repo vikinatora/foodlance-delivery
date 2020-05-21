@@ -21,6 +21,7 @@ export class NotificationService {
       };
     }
   }
+
   public static async notificationReceived(orderId: string) {
     try {
       const result = await axios({
@@ -38,5 +39,9 @@ export class NotificationService {
         message: "Unexpected error occured. Please"
       };
     }
+  }
+
+  public static showAlert(order: any) {
+    
   }
 }

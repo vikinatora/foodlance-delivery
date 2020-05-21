@@ -11,6 +11,7 @@ import { OrderInfoPopup } from '../OrderInfoPopup/OrderInfoPopup';
 import { UserService } from '../../services/userService';
 import { message, notification, Progress, Button } from 'antd';
 import { NotificationService } from '../../services/notificationService';
+import { OrderCountdown } from '../OrderAlert/OrderCountdown';
 
 const zoom: number = 15;
 
@@ -33,13 +34,51 @@ export const LeafletMap:React.FC = () => {
         message.error("Couldn't get location...");
       });
     };
-
     getUserLocation();
     getUserId();
+    addNotificationListener()
   }, [])
+
+  const showAcceptedOrderAlert = async (listener?: NodeJS.Timeout) => {
+    let showedAlert = false;
+    const notifications = await NotificationService.checkForNotification();
+    if (notifications && notifications.orders && notifications.orders.length) {
+      notifications.orders.forEach((order: any) => {
+        if (order.requestor === notifications.requestorId) {
+          if (listener) {
+            clearInterval(listener);
+          }
+          notification.open({
+            duration: 0,
+            message: `Your order has been accepted by ${order.executor.firstName} ${order.executor.lastName}`,
+            description: <>
+              <OrderCountdown
+                key="order-alert"
+                isExecutor={false}
+                order={order}
+                deliveryMinutes={20}
+                onCancelClick={() => message.info("Cancelinng.....")}
+              />
+            </>
+          });
+
+          showedAlert =  true;
+        }
+      });
+    }
+    return showedAlert;
+  }
   
+  const addNotificationListener = async () => {
+    const hasNotification = await showAcceptedOrderAlert();
+    if (!hasNotification) {
+      const listener = setInterval(async () => {
+        await showAcceptedOrderAlert(listener);
+      }, 3000)
+    }
+  }
 
-
+  
    return (
      <>
       <Navigation/>
@@ -63,6 +102,8 @@ export const LeafletMap:React.FC = () => {
         </TileLayer>
       </Map>
       <OrderForm showOrderForm={showOrderForm} setShowOrderForm={setShowOrderForm}/>
+      {/* <OrderAlert/> */}
     </>
    )
 }
+
