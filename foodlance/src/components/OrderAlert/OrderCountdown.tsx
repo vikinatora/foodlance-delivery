@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState } from "react"
 import Progress from "antd/lib/progress"
 import { Button } from "antd"
 import { IMapOrder } from "../../models/IMapOrder";
@@ -7,7 +7,7 @@ interface OrderCountdownProps {
   isExecutor: boolean;
   order: IMapOrder;
   deliveryMinutes: number;
-  onCancelClick: () => void;
+  onCancelClick: Function;
 }
 
 export const OrderCountdown: React.FC<OrderCountdownProps> = (props: OrderCountdownProps) => {
@@ -22,11 +22,6 @@ export const OrderCountdown: React.FC<OrderCountdownProps> = (props: OrderCountd
     clearInterval(minutesUpdateInterval);
   }, 60000); 
   
-
-  const extendTime = () => {
-    setMinutes(minutes + 5);
-  }
-  
   return (
     <>
       {
@@ -35,13 +30,12 @@ export const OrderCountdown: React.FC<OrderCountdownProps> = (props: OrderCountd
         : <div>{props.order.executor?.firstName} has {minutes} minutes to complete the order. When you have received you goods click the button to complete your part of the order.</div>
       }
       <Progress percent={minutes * 5} />
-      <Button >Complete delivery</Button>
-      {!props.isExecutor
-      ? <Button onClick={() => extendTime()} >Extend time</Button>
+      <Button>Complete delivery</Button>
+      {props.isExecutor
+      ? <Button type="danger" onClick={() => props.onCancelClick()}>Cancel delivery</Button>
       : null
       }
 
-      <Button type="danger" onClick={() => props.onCancelClick()}>Cancel delivery</Button>
     </>
   )
 }

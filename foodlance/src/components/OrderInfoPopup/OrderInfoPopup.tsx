@@ -11,6 +11,7 @@ import { OrderCountdown } from "../OrderAlert/OrderCountdown"
 interface OrderInfoPopupProps {
   order: IMapOrder;
   userId: string;
+  cancelOrder: Function;
 }
 
 export const OrderInfoPopup: React.FC<OrderInfoPopupProps> = (props: OrderInfoPopupProps) => {
@@ -38,7 +39,7 @@ export const OrderInfoPopup: React.FC<OrderInfoPopupProps> = (props: OrderInfoPo
               isExecutor={true}
               order={props.order}
               deliveryMinutes={20}
-              onCancelClick={() => message.info("Cancelinng.....")}
+              onCancelClick={() => cancelOrder()}
             />
           </>
         });
@@ -52,22 +53,7 @@ export const OrderInfoPopup: React.FC<OrderInfoPopupProps> = (props: OrderInfoPo
   const cancelOrder = async() => {
     setIsInProgress(false);
     setIsCanceling(true);
-    message.info({content: "Canceling your order...", duration: 1})
-    // TODO: Set active to false in db
-    const response = await OrderService.cancelOrder(props.order.order.id);
-    if (response.success) {
-      let clonedOrders: IMapOrder[] = cloneDeep(allOrders);
-        const orderIndex = clonedOrders.map(o => o.order.id).indexOf(props.order.order.id);
-        let changedOrder = clonedOrders.filter(o => o.order.id === props.order.order.id)[0];
-        changedOrder.order.inProgress = false;
-        changedOrder.order.active = false;
-        clonedOrders.splice(orderIndex, 1, changedOrder);
-        setAllOrders(clonedOrders);
-      message.success({content: "Successfully cancelled the delivery.", duration: 2});
-      notification.close("order-alert")
-    } else {
-      message.error({content: response.message, duration: 2});
-    }
+    props.cancelOrder();
     setIsCanceling(false);
   }
 

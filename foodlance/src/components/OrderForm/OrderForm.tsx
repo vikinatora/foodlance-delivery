@@ -7,7 +7,6 @@ import Order from '../../models/Order';
 import cloneDeep from 'lodash.clonedeep';
 import axios from "axios";
 import { LayerContext } from '../../context/LayerContext';
-import { LatLngTuple } from 'leaflet';
 import { IMapOrder } from '../../models/IMapOrder';
 import { OrderHelpers } from '../../helpers/OrderHelper';
 

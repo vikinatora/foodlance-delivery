@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { Map, TileLayer, LayerGroup, Marker, Popup, Tooltip } from 'react-leaflet';
+import { Map, TileLayer, LayerGroup, Marker, Tooltip } from 'react-leaflet';
 import { LatLngTuple } from 'leaflet';
 import "./MapStyles.css";
 import { LayerContext } from '../../context/LayerContext';
@@ -9,17 +9,21 @@ import { Navigation } from '../Navigation/Navigation';
 import { IMapOrder } from '../../models/IMapOrder';
 import { OrderInfoPopup } from '../OrderInfoPopup/OrderInfoPopup';
 import { UserService } from '../../services/userService';
-import { message, notification, Progress, Button } from 'antd';
+import { message, notification } from 'antd';
 import { NotificationService } from '../../services/notificationService';
 import { OrderCountdown } from '../OrderAlert/OrderCountdown';
+import { OrderService } from '../../services/orderService';
+import cloneDeep from 'lodash.clonedeep';
+import { OrderHelpers } from '../../helpers/OrderHelper';
 
 const zoom: number = 15;
 
 export const LeafletMap:React.FC = () => {
-  const { point, allOrders } = useContext(LayerContext);
+  const { point, allOrders, setAllOrders, setToken } = useContext(LayerContext);
   const [coordinates, setCoordinate] = useState<LatLngTuple>([0, 0]);
   const [showOrderForm, setShowOrderForm] = useState<boolean>(false);
   const [userId, setUserId] = useState<string>("");
+
   useEffect(() => {
     const getUserId = async () => {
       const id = await UserService.getUserId();
@@ -29,16 +33,31 @@ export const LeafletMap:React.FC = () => {
     const getUserLocation = () => {
       navigator.geolocation.getCurrentPosition((position) => {
         setCoordinate([position.coords.latitude, position.coords.longitude]);
-      },
-      () => {
+      }, () => {
         message.error("Couldn't get location...");
       });
     };
+    const getOrders = async () => {
+      let clientOrders: IMapOrder[] = [];
+      const orders = await OrderService.getOrders();
+      orders.forEach((order: any) => {
+        clientOrders.push(OrderHelpers.mapDbToClientModel(order));
+        setAllOrders(clientOrders);        
+      });
+    }
+    const getToken = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        setToken(token);
+      }
+    }
+    getOrders();
+    getToken();
     getUserLocation();
     getUserId();
     addNotificationListener()
   }, [])
-
+  
   const showAcceptedOrderAlert = async (listener?: NodeJS.Timeout) => {
     let showedAlert = false;
     const notifications = await NotificationService.checkForNotification();
@@ -48,16 +67,17 @@ export const LeafletMap:React.FC = () => {
           if (listener) {
             clearInterval(listener);
           }
+          notification.close("order-alert");
           notification.open({
             duration: 0,
             message: `Your order has been accepted by ${order.executor.firstName} ${order.executor.lastName}`,
             description: <>
               <OrderCountdown
-                key="order-alert"
+                key={"order-alert"}
                 isExecutor={false}
                 order={order}
                 deliveryMinutes={20}
-                onCancelClick={() => message.info("Cancelinng.....")}
+                onCancelClick={() => cancelOrder(order)}
               />
             </>
           });
@@ -68,7 +88,24 @@ export const LeafletMap:React.FC = () => {
     }
     return showedAlert;
   }
-  
+
+  const cancelOrder = async (order: IMapOrder) => {
+    const response = await OrderService.cancelOrder(order.order.id);
+    if (response.success) {
+      let clonedOrders: IMapOrder[] = cloneDeep(allOrders);
+        const orderIndex = clonedOrders.map(o => o.order.id).indexOf(order.order.id);
+        let changedOrder = clonedOrders.filter(o => o.order.id === order.order.id)[0];
+        changedOrder.order.inProgress = false;
+        changedOrder.order.active = false;
+        clonedOrders.splice(orderIndex, 1, changedOrder);
+        setAllOrders(clonedOrders);
+      notification.close("order-alert");
+      message.success({content: "Successfully cancelled the delivery.", duration: 2});
+    } else {
+      message.error({content: response.message, duration: 2});
+    }
+  }
+
   const addNotificationListener = async () => {
     const hasNotification = await showAcceptedOrderAlert();
     if (!hasNotification) {
@@ -86,12 +123,12 @@ export const LeafletMap:React.FC = () => {
         <MapButtons setShowOrderForm={setShowOrderForm} />
         <LayerGroup>
           {point}
-          {(allOrders || []).map((order: IMapOrder) => (
+          {allOrders.map((order: IMapOrder) => (
             <Marker
               key={order.order.id}
               position={[order.marker.lat, order.marker.lng]}
             >
-            <OrderInfoPopup userId={userId} order={order}/>
+            <OrderInfoPopup userId={userId} order={order} cancelOrder={() => cancelOrder(order)}/>
             <Tooltip>{`Tip: ${order.order.tip}lv. | Total cost: ${order.order.totalPrice}lv.`}</Tooltip>
             </Marker>
           ))}
@@ -102,7 +139,6 @@ export const LeafletMap:React.FC = () => {
         </TileLayer>
       </Map>
       <OrderForm showOrderForm={showOrderForm} setShowOrderForm={setShowOrderForm}/>
-      {/* <OrderAlert/> */}
     </>
    )
 }
