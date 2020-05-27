@@ -5,7 +5,7 @@ import './components/MapButtons/MapButtonsStyles.css';
 import './components/OrderForm/OrderFormStyles.css';
 import './components/Navigation/NavigationStyles.css';
 import './components/Login/LoginFormStyles.css';
-import './components/OrderInfoPopup/OrderInfoPopup';
+import './components/Profile/ProfileStyles.css';
 
 import 'antd/dist/antd.css'; 
 import App from './App';

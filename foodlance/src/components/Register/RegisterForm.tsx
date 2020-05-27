@@ -1,15 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Form, Button, message } from "antd";
 import { Input } from "antd";
-import axios from "axios";
 import { Redirect } from "react-router-dom";
 import { Navigation } from "../Navigation/Navigation";
+import { LoginService } from "../../services/loginService";
+import { LayerContext } from "../../context/LayerContext";
 
 interface RegisterProps {
 
 }
+
 export const RegisterForm: React.FC<RegisterProps> = (props: RegisterProps) => {
+  const { setToken } = useContext(LayerContext);
   const [redirect, setRedirect] = useState<boolean>(false);
+
   const layout = {
     labelCol: { span: 9 },
     wrapperCol: { span: 6 },
@@ -20,30 +24,20 @@ export const RegisterForm: React.FC<RegisterProps> = (props: RegisterProps) => {
   const key = 'updatable';
 
   const onFinish = async (values: any) => {
-    console.log('Success:', values);
-    //TODO: Make call to db
-    try {
-      message.loading({ content: 'Registering account...', key });
-      await axios({
-        method: 'POST',
-        url: 'http://localhost:5000/api/user',
-        data: {
-          firstName: values.firstName,
-          lastName: values.lastName,
-          username: values.username,
-          password: values.password
-        }
-      });
+    message.loading({ content: 'Registering account...', key });
+    const result = await LoginService.registerUser(values);
+    if (result.success) {
       setTimeout(() => {
-        message.success({content: "Successfully registered! Redirecting to login page...", key, duration: 2})
+        message.success({content: "Successfully registered! Redirecting to login page...", key, duration: 1})
       }, 1000);
+
       setTimeout(() => {
+        setToken(result.token);
+        // TODO: Set token in session storage if remember me is not checked
+        localStorage.setItem("token", result.token);
         setRedirect(true);
       }, 2000);
-    } catch(err) {
-      //TODO: Show error toastr
-      message.error({content: "Unexpected error occured. Please try again", key, duration: 2});
-      console.log(err.message);
+
     }
   };
 
@@ -52,7 +46,7 @@ export const RegisterForm: React.FC<RegisterProps> = (props: RegisterProps) => {
   };
 
   if (redirect) {
-    return <Redirect to="/login" />
+    return <Redirect to="/" />
   }
   return (
     <>

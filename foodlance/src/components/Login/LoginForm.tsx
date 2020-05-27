@@ -1,14 +1,15 @@
 import React, { useState, useContext } from "react";
 import { Form, Checkbox, Button, message } from "antd";
 import { Input } from "antd";
-import axios from "axios";
 import { Redirect } from "react-router-dom";
 import { LayerContext } from "../../context/LayerContext";
 import { Navigation } from "../Navigation/Navigation";
+import { LoginService } from "../../services/loginService";
 
 interface LoginProps {
 
 }
+
 export const LoginForm: React.FC<LoginProps> = (props: LoginProps) => {
   const { setToken } = useContext(LayerContext)
   const [redirect, setRedirect] = useState<boolean>(false);
@@ -21,34 +22,23 @@ export const LoginForm: React.FC<LoginProps> = (props: LoginProps) => {
   };
   const key = 'updatable';
 
-  const onFinish = async (values: any) => {
-    console.log('Success:', values);
-    
-    try {
-      message.loading({ content: 'Logging in...', key });
-      const result = await axios({
-        method: 'POST',
-        url: 'http://localhost:5000/api/auth/login',
-        data: {
-          username: values.username,
-          password: values.password
-        }
-      });
-      
-      console.log(result.data.token);
-      setToken(result.data.token);
-      // TODO: Set token in session storage if remember me is not checked
-      localStorage.setItem("token", result.data.token);
+  const onFinish = async (values: any) => {  
+    message.loading({ content: 'Logging in...', key });
 
+    const result = await LoginService.loginUser(values);
+
+    if (result.success) {
+      setToken(result.token);
+      // TODO: Set token in session storage if remember me is not checked
+      localStorage.setItem("token", result.token);
       setTimeout(() => {
-        message.success({content: "Successfully logged in! Redirecting to login page...", key, duration: 2})
+        message.success({content: "Successfully logged in! Redirecting to login page...", key, duration: 1})
       }, 1000);
       setTimeout(() => {
         setRedirect(true);
       }, 2000);
-    } catch(err) {
-      message.error({content: "Unexpected error occured. Please try again", key, duration: 2});
-      console.log(err.message);
+    } else {
+      message.error({content: "Unexpected error occured. Please try again", key, duration: 1});
     }
   };
 

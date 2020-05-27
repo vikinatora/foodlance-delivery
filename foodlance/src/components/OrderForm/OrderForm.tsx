@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Modal, Button, Input, Row, Col, Form, message, Select } from 'antd';
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import ProductInfo from '../../models/ProductInfo';
@@ -9,6 +9,7 @@ import axios from "axios";
 import { LayerContext } from '../../context/LayerContext';
 import { IMapOrder } from '../../models/IMapOrder';
 import { OrderHelpers } from '../../helpers/OrderHelper';
+import { OrderService } from '../../services/orderService';
 
 interface OrderFormProps {
   showOrderForm: boolean;
@@ -29,43 +30,29 @@ const tipOptions = [
   { value: "custom", label: "Custom"},
 ]
 const OrderForm: React.FC<OrderFormProps> = (props: OrderFormProps) => {
-  const { point, setPoint, stateToken, allOrders, setAllOrders } = useContext(LayerContext);
+  const { point, setPoint, allOrders, setAllOrders } = useContext(LayerContext);
   const [order, setOrder] = useState<Order>(new Order());
   const [form] = Form.useForm();
 
   const handleSubmit = async() => {
     message.info("Submitting order...");
-    try{
+    try {
       const token = localStorage.getItem("token");
-      if (token || stateToken) {
-        await axios({
-          method: 'POST',
-          url: 'http://localhost:5000/api/order/create',
-          headers: {
-            "X-Auth-Token": token || stateToken
-          },
-          data: {
-            order: order,
-            markerPosition: point.props.position
-          },
-        }).then((response) => {
-          if (response.data.success) {
-            const clonedMarkers: IMapOrder[] = cloneDeep(allOrders);
-            clonedMarkers.push(OrderHelpers.mapDbToClientModel(response.data.newOrder));
-            setAllOrders(clonedMarkers);
-            setPoint([0,0]);
-            props.setShowOrderForm(false);
-          }
-        });
-
+      if (token) {
+        const result = await OrderService.createOrder(order, point, token);
+        if (result.success) {
+          const clonedMarkers: IMapOrder[] = cloneDeep(allOrders);
+          clonedMarkers.push(OrderHelpers.mapDbToClientModel(result.newOrder));
+          setAllOrders(clonedMarkers);
+          setPoint([0,0]);
+          props.setShowOrderForm(false);
+        }
         message.success({content: "Successfully created order! You will be notified when someone accepts it.", duration: 2});
       } else {
         message.error("Missing authentication token. Strange....");
       }
     } catch(error) {
-      console.log(error.message);
       message.error("Unexpected server error occurred. Please try again later.");
-
     }
   }
 
@@ -91,6 +78,8 @@ const OrderForm: React.FC<OrderFormProps> = (props: OrderFormProps) => {
   };
 
   const cancelOrder = () => {
+    form.resetFields();
+    setOrder(new Order());
     props.setShowOrderForm(false);
   }
   const addNewProduct = () => {
