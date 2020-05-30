@@ -57,7 +57,7 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       //TODO: Show inactive only if you are the requestor
-      const orders = await Order.find({active: true}).populate("products").populate("marker").populate("requestor");        
+      const orders = await Order.find({active: true}).populate("products").populate("marker").populate("requestor").populate("executor");        
       res.send(orders);
     } catch (error){
       console.error(error.message);
@@ -71,8 +71,8 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const { orderId, userId } = req.body;
-      const user = await User.findById(userId);
-      if( user.acceptedOrder && user.acceptedOrder._id === orderId) {
+      const user = await User.findById(userId).populate("acceptedOrder");
+      if( user.acceptedOrder && user.acceptedOrder.id) {
         res.send({success: false, message: "Cannot accept more than one order."});
         return;
       }
@@ -102,7 +102,8 @@ router.post(
   auth,
   async (req: Request, res: Response) => {
     try {
-      const { orderId, userId } = req.body;
+      const { orderId } = req.body;
+      
       await Order.findByIdAndUpdate(orderId, {
         $set: {
             executor: null,
@@ -110,6 +111,12 @@ router.post(
             inProgress: false,
 
           }
+      })
+
+      await User.findByIdAndUpdate(req.userId, {
+        $set: {
+          acceptedOrder: null
+        }
       })
       res.send({success: true, message: "Successfully canceled order"});
     } catch(error) {
@@ -125,13 +132,19 @@ router.post(
   auth,
   async (req: Request, res: Response) => {
     try {
-      const { orderId, userId } = req.body;
-      await Order.findByIdAndUpdate(orderId, {
+      const { orderId } = req.body;
+      const order = await Order.findByIdAndUpdate(orderId, {
         $set: {
             executor: null,
             active: false,
             inProgress: false,
           }
+      }).populate("executor")
+
+      await User.findByIdAndUpdate(order.executor._id, {
+        $set: {
+          acceptedOrder: null
+        }
       })
       res.send({success: true, message: "Successfully removed order"});
     } catch(error) {
@@ -141,5 +154,84 @@ router.post(
     }
   }
 )
+
+router.post(
+  "/requestorComplete",
+  auth,
+  async (req: Request, res: Response) => {
+    try {
+      const { orderId } = req.body;
+      let order = await Order.findByIdAndUpdate(orderId, {
+        $set: {
+          requestorComplete: true
+        }
+      });
+      const user = await User.findByIdAndUpdate(req.userId, {
+        $inc: {
+          experience: 1 + order.tip % 10
+        }
+      });
+      
+      if (order.executorComplete) {
+        order = await Order.findByIdAndUpdate(orderId, {
+          $set: {
+            completed: true,
+            active: false,
+          }
+        })
+        res.send({success: true, fullyCompleted: true, message: "Successfully completed order"});
+        return;
+      }
+      res.send({success: true, message: "Successfully completed your side of the order."});
+    } catch(error) {
+      console.error(error.message);
+      res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).send("Server Error");
+      res.send({success: false, message: "Unexpected error occured while acceptiong order. Please try again."});
+    }
+  }
+)
+
+
+router.post(
+  "/executorComplete",
+  auth,
+  async (req: Request, res: Response) => {
+    try {
+      const { orderId } = req.body;
+      
+      let order = await Order.findByIdAndUpdate(orderId, {
+        $set: {
+          executorComplete: true
+        }
+      });
+      
+      const user = await User.findByIdAndUpdate(req.userId, {
+        $set: {
+          acceptedOrder: null
+        },
+        $inc: {
+          experience: 1 + order.totalPrice % 10
+        }
+      });
+
+      if (order.requestorComplete) {
+        order = await Order.findByIdAndUpdate(orderId, {
+          $set: {
+            completed: true,
+            active: false
+          }
+        })
+        res.send({success: true, fullyCompleted: true, message: "Successfully completed order"});
+        return;
+      }
+      res.send({success: true, message: "Successfully completed your side of the order."});
+    } catch(error) {
+      console.error(error.message);
+      res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).send("Server Error");
+      res.send({success: false, message: "Unexpected error occured while acceptiong order. Please try again."});
+    }
+  }
+)
+
   
 export default router;

@@ -79,6 +79,27 @@ router.get(
   async (req: Request, res: Response) => {
     res.send(req.userId);
   }
-)
+);
+
+router.post(
+  "/avatar",
+  auth,
+  async (req: Request, res: Response) => {
+    try {
+      const { avatar } = req.body;
+      const user = await User.findByIdAndUpdate(req.userId, {
+        $set: {
+          imageSrc: avatar
+        }
+      });
+  
+      res.send({success: true, message: "Successfully set avatar"});
+    }
+    catch(err) {
+      console.error(err.message);
+      res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).send("Server Error");
+    }
+  }
+);
 
 export default router;

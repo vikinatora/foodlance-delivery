@@ -11,7 +11,7 @@ router.get(
   auth,
   async (req: Request, res: Response) => {
     try {
-      const orders = await Order.find( {inProgress: true, sentNotification: false}).populate("executor");
+      const orders = await Order.find( {inProgress: true, requestorComplete: false}).populate("executor");
       res.send({ success: true, orders: orders, requestorId: req.userId });
     } catch(error) {
       res.send({ success: false, error: "Unexpected error occurred" });

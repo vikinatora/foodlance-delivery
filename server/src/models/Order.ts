@@ -11,7 +11,9 @@ export interface IOrder extends Document {
   active: boolean,
   inProgress: boolean,
   completed: boolean,
-  sentNotification: boolean
+  sentNotification: boolean,
+  requestorComplete: boolean,
+  executorComplete: boolean
 }
 
 const orderSchema: Schema = new Schema({
@@ -63,6 +65,16 @@ const orderSchema: Schema = new Schema({
     default: false
   },
   sentNotification: {
+    type: Schema.Types.Boolean,
+    required: true,
+    default: false
+  },
+  requestorComplete: {
+    type: Schema.Types.Boolean,
+    required: true,
+    default: false
+  },
+  executorComplete: {
     type: Schema.Types.Boolean,
     required: true,
     default: false

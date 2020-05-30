@@ -42,8 +42,8 @@ export const LeafletMap:React.FC = () => {
       const orders = await OrderService.getOrders();
       orders.forEach((order: any) => {
         clientOrders.push(OrderHelpers.mapDbToClientModel(order));
-        setAllOrders(clientOrders);        
       });
+      setAllOrders(clientOrders);        
     }
     const getToken = async () => {
       const token = localStorage.getItem("token");
@@ -70,6 +70,7 @@ export const LeafletMap:React.FC = () => {
           notification.close("order-alert");
           notification.open({
             duration: 0,
+            closeIcon: <div></div>,
             message: `Your order has been accepted by ${order.executor.firstName} ${order.executor.lastName}`,
             description: <>
               <OrderCountdown
@@ -78,16 +79,31 @@ export const LeafletMap:React.FC = () => {
                 order={order}
                 deliveryMinutes={20}
                 onCancelClick={() => cancelOrder(order)}
+                onCompleteClick={() => completeRequestorOrder(order._id)}
               />
             </>
           });
-
           showedAlert =  true;
         }
       });
     }
     return showedAlert;
   }
+
+  const completeRequestorOrder  = async (orderId: string) => {
+    const result = await OrderService.completeRequestorOrder(orderId);
+    message.info(result.message)
+    if (result.success) {
+      notification.close("order-alert");
+      if (result.fullyCompleted) {
+        let clonedOrders: IMapOrder[] = cloneDeep(allOrders);
+        const orderIndex = clonedOrders.map(o => o.order.id).indexOf(orderId);
+        let changedOrder = clonedOrders.filter(o => o.order.id === orderId)[0];
+        clonedOrders.splice(orderIndex, 1);
+        setAllOrders(clonedOrders);
+      }
+    }
+  };
 
   const cancelOrder = async (order: IMapOrder) => {
     const response = await OrderService.cancelOrder(order.order.id);
@@ -99,7 +115,7 @@ export const LeafletMap:React.FC = () => {
         changedOrder.order.active = false;
         clonedOrders.splice(orderIndex, 1, changedOrder);
         setAllOrders(clonedOrders);
-      notification.close("order-alert");
+        notification.close("order-alert");
       message.success({content: "Successfully cancelled the delivery.", duration: 2});
     } else {
       message.error({content: response.message, duration: 2});
@@ -123,15 +139,14 @@ export const LeafletMap:React.FC = () => {
         <MapButtons setShowOrderForm={setShowOrderForm} />
         <LayerGroup>
           {point}
-          {allOrders.map((order: IMapOrder) => (
-            <Marker
-              key={order.order.id}
-              position={[order.marker.lat, order.marker.lng]}
-            >
+          {(allOrders || []).map((order: IMapOrder) => (
+          <Marker
+          key={order.order.id}
+          position={[order.marker.lat, order.marker.lng]}
+          >
             <OrderInfoPopup userId={userId} order={order} cancelOrder={() => cancelOrder(order)}/>
-            <Tooltip>{`Tip: ${order.order.tip}lv. | Total cost: ${order.order.totalPrice}lv.`}</Tooltip>
-            </Marker>
-          ))}
+          {/* <Tooltip>{`Tip: ${order.order.tip}lv. | Total cost: ${order.order.totalPrice}lv.`}</Tooltip> */}
+          </Marker>          ))}
         </LayerGroup>
           <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

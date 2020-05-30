@@ -8,6 +8,7 @@ interface OrderCountdownProps {
   order: IMapOrder;
   deliveryMinutes: number;
   onCancelClick: Function;
+  onCompleteClick: Function;
 }
 
 export const OrderCountdown: React.FC<OrderCountdownProps> = (props: OrderCountdownProps) => {
@@ -16,8 +17,6 @@ export const OrderCountdown: React.FC<OrderCountdownProps> = (props: OrderCountd
   const minutesUpdateInterval = setInterval(() => {
     if (minutes > 0 ) {
       setMinutes(minutes - 1)
-    } else {
-      //TODO: Add logic after countdown is 0
     }
     clearInterval(minutesUpdateInterval);
   }, 60000); 
@@ -30,12 +29,11 @@ export const OrderCountdown: React.FC<OrderCountdownProps> = (props: OrderCountd
         : <div>{props.order.executor?.firstName} has {minutes} minutes to complete the order. When you have received you goods click the button to complete your part of the order.</div>
       }
       <Progress percent={minutes * 5} />
-      <Button>Complete delivery</Button>
+      <Button onClick={() => props.onCompleteClick()}>Complete delivery</Button>
       {props.isExecutor
       ? <Button type="danger" onClick={() => props.onCancelClick()}>Cancel delivery</Button>
       : null
       }
-
     </>
   )
 }

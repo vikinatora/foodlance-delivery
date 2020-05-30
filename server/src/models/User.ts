@@ -6,6 +6,8 @@ export interface IUser extends Document {
   lastName: string;
   password: string;
   acceptedOrder: any;
+  experience: number;
+  imageSrc: string;
 }
 
 const userSchema: Schema = new Schema({
@@ -39,6 +41,16 @@ const userSchema: Schema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "Order",
     required: false,
+  },
+  experience: {
+    type: Number,
+    required: true,
+    default: 0
+  },
+  avatarSrc: {
+    type: String,
+    required: true,
+    default: ""
   },
 });
 

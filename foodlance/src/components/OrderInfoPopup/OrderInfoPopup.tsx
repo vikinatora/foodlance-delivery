@@ -1,4 +1,4 @@
-import { Popup } from "react-leaflet"
+import { Popup, Marker, Tooltip } from "react-leaflet"
 import React, { useState, useContext } from "react"
 import ProductInfo from "../../models/ProductInfo"
 import { IMapOrder } from "../../models/IMapOrder"
@@ -32,6 +32,7 @@ export const OrderInfoPopup: React.FC<OrderInfoPopupProps> = (props: OrderInfoPo
         setAllOrders(clonedOrders);
         notification.open({
           duration: 0,
+          closeIcon: <div></div>,
           message: `Successfully accepted order for ${props.order.requestor.firstName} ${props.order.requestor.lastName}`,
           description: <>
             <OrderCountdown
@@ -40,16 +41,32 @@ export const OrderInfoPopup: React.FC<OrderInfoPopupProps> = (props: OrderInfoPo
               order={props.order}
               deliveryMinutes={20}
               onCancelClick={() => cancelOrder()}
+              onCompleteClick={() => completeExecutorOrder(props.order.order.id)}
             />
           </>
         });
-
       } else {
+        setIsInProgress(false);
         message.error({content: response.message, duration: 2});
 
       }
     }
   }
+
+  const completeExecutorOrder  = async (orderId: string) => {
+    const result = await OrderService.completeExecutorOrder(orderId);
+    message.info(result.message)
+    if(result.success) {
+      notification.close("order-alert");
+      if (result.fullyCompleted) {
+        let clonedOrders: IMapOrder[] = cloneDeep(allOrders);
+        const orderIndex = clonedOrders.map(o => o.order.id).indexOf(orderId);
+        clonedOrders.splice(orderIndex, 1);
+        setAllOrders(clonedOrders);
+      }
+    }
+  };
+
   const cancelOrder = async() => {
     setIsInProgress(false);
     setIsCanceling(true);
@@ -79,9 +96,11 @@ export const OrderInfoPopup: React.FC<OrderInfoPopupProps> = (props: OrderInfoPo
         <div><span>You have to log in before viewing orders.</span></div>
       </Popup>
     )
-  } else {
+  } else if(!props.order.order.inProgress ||
+     isInProgress ||
+    props.order.order.inProgress && (props.userId === props.order.requestor.id || props.userId === props.order.executor?.id)) {
     return (
-      <Popup>
+        <Popup>
         <div className="order-details">
           <div><span>Products wanted by {props.order.requestor.firstName} {props.order.requestor.lastName}</span></div>
           <ol>
@@ -93,14 +112,35 @@ export const OrderInfoPopup: React.FC<OrderInfoPopupProps> = (props: OrderInfoPo
           <div><span>Total price: {props.order.order.totalPrice}</span></div>
           <div className="button-section">
             {
-              props.userId === props.order.requestor.id 
-              ? null
-              : <Button
-               loading={isInProgress || props.order.order.inProgress}
-               onClick={() => acceptOrder()}
-               >
-                 { isInProgress || props.order.order.inProgress ? "Order in progress" : "Accept order" }
-               </Button>
+              props.userId !== props.order.requestor.id
+              ? 
+                <>
+                <Button
+                  loading={isInProgress || props.order.order.inProgress}
+                  onClick={() => acceptOrder()}
+                  >
+                    { isInProgress || props.order.order.inProgress ? "Order in progress" : "Accept order" }
+                </Button>
+                </>
+              : null
+            }
+            {
+              props.order.order.inProgress &&  props.userId === props.order.executor?.id
+              ?
+              <Popconfirm
+                title="Are you sure you want to cancel the delivery?"
+                onConfirm={() => cancelOrder()}
+                okText="Yes"
+                cancelText="No"
+              >
+                <Button type="danger" loading={isCanceling}>Cancel delivery</Button>
+              </Popconfirm>
+              : null
+            }
+            {
+              !props.order.order.inProgress && props.userId === props.order.requestor.id
+              ? <Button type="danger" loading={isCanceling} onClick={() => removeOrder()}>Remove order</Button>
+              : null
             }
             {
               props.order.order.inProgress && props.userId === props.order.requestor.id
@@ -116,14 +156,12 @@ export const OrderInfoPopup: React.FC<OrderInfoPopupProps> = (props: OrderInfoPo
               </Popconfirm>
               : null
             }
-            {
-              !props.order.order.inProgress && props.userId === props.order.requestor.id
-              ? <Button type="danger" loading={isCanceling} onClick={() => removeOrder()}>Remove order</Button>
-              : null
-            }
+            
           </div>
         </div>
       </Popup>
     )
+  } else {
+    return null;
   }
 }

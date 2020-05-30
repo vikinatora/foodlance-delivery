@@ -13,9 +13,14 @@ export class OrderHelpers {
         completed: order.completed
       },
       requestor: {
-        firstName: order.requestor.firstName,
         id: order.requestor._id,
+        firstName: order.requestor.firstName,
         lastName: order.requestor.lastName
+      },
+      executor: {
+        id: order.executor ? order.executor._id : null,
+        firstName: order.executor ? order.executor.firstName : null,
+        lastName: order.executor ? order.executor.lastName : null
       },
       marker: {
         lat: order.marker.lat,
