@@ -1,13 +1,15 @@
 import { Document, Model, model, Schema } from "mongoose";
+import { IOrder } from "./Order";
 
 export interface IUser extends Document {
   username: string;
   firstName: string;
   lastName: string;
   password: string;
-  acceptedOrder: any;
   experience: number;
   imageSrc: string;
+  acceptedOrder: any;
+  completedOrders: IOrder[];
 }
 
 const userSchema: Schema = new Schema({
@@ -52,6 +54,11 @@ const userSchema: Schema = new Schema({
     required: true,
     default: ""
   },
+  completedOrders: [{
+    type: Schema.Types.ObjectId,
+    ref: "Order",
+    required: false,
+  }],
 });
 
 const User: Model<IUser> = model("User", userSchema);

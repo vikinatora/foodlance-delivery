@@ -178,7 +178,16 @@ router.post(
             completed: true,
             active: false,
           }
-        })
+        }).populate("executor");
+
+        const user = await User.findByIdAndUpdate(order.executor.id, {
+          $push: {
+            completedOrders: order
+          },
+          $inc: {
+            tips: order.tip
+          }
+        });
         res.send({success: true, fullyCompleted: true, message: "Successfully completed order"});
         return;
       }
@@ -221,6 +230,15 @@ router.post(
             active: false
           }
         })
+
+        const user = await User.findByIdAndUpdate(req.userId, {
+          $push: {
+            completedOrders: order
+          },
+          $inc: {
+            tips: order.tip
+          }
+        });
         res.send({success: true, fullyCompleted: true, message: "Successfully completed order"});
         return;
       }

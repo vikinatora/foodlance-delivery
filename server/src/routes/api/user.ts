@@ -102,4 +102,27 @@ router.post(
   }
 );
 
+router.get(
+  "/profile",
+  auth,
+  async (req: Request, res: Response) => {
+    try {
+      const userInfo = await User.findById(req.userId)
+      .populate({
+        path: "completedOrders",
+        populate: {
+          path: "requestor",
+          model: "User"
+        }
+      })
+      .populate("accepetedOrder");
+      res.send({success: true, userInfo});
+    }
+    catch(err) {
+      console.error(err.message);
+      res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).send("Server Error");
+    }
+  }
+);
+
 export default router;

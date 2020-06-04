@@ -32,7 +32,7 @@ export const OrderInfoPopup: React.FC<OrderInfoPopupProps> = (props: OrderInfoPo
         setAllOrders(clonedOrders);
         notification.open({
           duration: 0,
-          closeIcon: <div></div>,
+          // closeIcon: <div></div>,
           message: `Successfully accepted order for ${props.order.requestor.firstName} ${props.order.requestor.lastName}`,
           description: <>
             <OrderCountdown
@@ -116,10 +116,10 @@ export const OrderInfoPopup: React.FC<OrderInfoPopupProps> = (props: OrderInfoPo
               ? 
                 <>
                 <Button
-                  loading={isInProgress || props.order.order.inProgress}
-                  onClick={() => acceptOrder()}
+                  // loading={isInProgress || props.order.order.inProgress}
+                  onClick={() => isInProgress || props.order.order.inProgress ? completeExecutorOrder(props.order.order.id) : acceptOrder()}
                   >
-                    { isInProgress || props.order.order.inProgress ? "Order in progress" : "Accept order" }
+                    { isInProgress || props.order.order.inProgress ? "Complete order" : "Accept order" }
                 </Button>
                 </>
               : null
