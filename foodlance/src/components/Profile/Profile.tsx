@@ -1,6 +1,6 @@
 import Avatar from "antd/lib/avatar";
 import React, { useState, useEffect } from "react";
-import { Row, Upload, Col, Table } from "antd";
+import { Row, Upload, Col, Table, Button, Badge } from "antd";
 import Progress from "antd/lib/progress"
 import { UserService } from "../../services/userService";
 import { Navigation } from "../Navigation/Navigation";
@@ -14,9 +14,32 @@ interface ProfileProps {
 }
 const completedOrderColumns = [
   {
+    title: 'Completed',
+    dataIndex: 'completedDate',
+    key: 'completedDate',
+  },
+  {
     title: 'Requestor name',
     dataIndex: 'requestorName',
     key: 'requestorName',
+  },
+  {
+    title: 'Total price',
+    dataIndex: 'totalPrice',
+    key: 'totalPrice',
+  },
+  {
+    title: 'Delivery tip',
+    dataIndex: 'tip',
+    key: 'tip',
+  },
+];
+
+const userOrderColumns = [
+  {
+    title: 'Created',
+    dataIndex: 'createdDate',
+    key: 'createdDate',
   },
   {
     title: 'Total price of order',
@@ -24,29 +47,118 @@ const completedOrderColumns = [
     key: 'totalPrice',
   },
   {
-    title: 'Tip percentage',
-    dataIndex: 'tipPercentage',
-    key: 'tipPercentage',
-  },
-  {
-    title: 'Tip',
+    title: 'Delivery tip',
     dataIndex: 'tip',
     key: 'tip',
   },
+  {
+    title: 'Status',
+    dataIndex: 'status',
+    key: 'status',
+    render: (_: any, order: any) => {
+      if (order.completed) {
+        return (
+          <span>
+            <Badge status="success" />
+            Completed
+          </span>
+        )
+      } else if(order.inProgress) {
+        return (
+          <span>
+            <Badge status="processing" />
+            In progress
+          </span>
+        );
+      } else if(order.active) {
+        return (
+          <span>
+            <Badge status="warning" />
+            Active
+          </span>
+        );
+      } else if (!order.active && !order.completed) {
+        return (
+          <span>
+            <Badge status="error" />
+              Removed
+          </span>
+        );
+      }
+    }
+  },
+  {
+    title: 'Actions',
+    dataIndex: 'actions',
+    key: 'actions',
+    render: (_: any, order: any) => {
+      if (order.active) {
+        if(order.inProgress) {
+          return (
+            <>
+              <Button type="primary" onClick={() => console.log(`Reactivating order ${order.id}`)}>Complete</Button>
+              <Button type="danger" onClick={() => console.log(`Reactivating order ${order.id}`)}>Deactivate</Button>
+            </>
+          )
+        } else {
+          return (
+            <Button type="danger" onClick={() => console.log(`Reactivating order ${order.id}`)}>Deactivate</Button>
+          )
+        }
+      } else {
+        return (
+          <Button type="dashed" onClick={() => console.log(`Reactivating order ${order.id}`)}>Reactivate</Button>
+        )
+      }
+    }
+  }
+];
+
+const productColumns =[{
+  title: 'Product name',
+  dataIndex: 'name',
+  key: 'name',
+},
+{
+  title: 'Quantity',
+  dataIndex: 'quantity',
+  key: 'name',
+},
+{
+  title: 'Price',
+  dataIndex: 'price',
+  key: 'price',
+}
 ];
 
 export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
   const [userInfo, setUserInfo] = useState<IProfile>(new ProfileModel());
+  const [userOrders, setUserOrders] = useState<any[]>([]);
+  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const getProfileInfo = async () => {
-      const userInfo: IProfile = await UserService.getProfile();
+      const [userInfo, userOrders] = await UserService.getProfile();
       setUserInfo(userInfo);
+      setUserOrders(userOrders);
     }
     getProfileInfo()
   }, []);
-  
+
+  const expandedRowRender =  (order: any) => {
+    const products: any[] = userOrders.find(o => o.id === order.id).products;
+
+    return <Table columns={productColumns} dataSource={products} pagination={false} />;
+  };
+  const onTableRowExpand = (expanded: boolean, order: any) => {
+    var keys = [];
+    if (expanded){
+        keys.push(order.id); // I have set my record.id as row key. Check the documentation for more details.
+    }
+
+    setExpandedRowKeys(keys);
+  }
   const handleAvatarChange = (info: any) => {
     if (info.file.status === 'uploading') {
       setLoading(true);
@@ -55,6 +167,7 @@ export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
     if (info.file.status === 'done') {
       // Get this url from response in real world.
       ProfileHelpers.getBase64(info.file.originFileObj, (imageUrl: string) => {
+        UserService.uploadAvatar(imageUrl);
         setUserInfo(prev => ({
           ...prev,
           avatarSrc: imageUrl
@@ -66,18 +179,18 @@ export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
 
   return (
     <>
-      <Navigation/>
+      <Navigation />
       <div className="profile-wrapper">
-
-        <Row>
-          <Col offset="10">
+        <Row className="row">
+        <Col offset="10">
             <div className="avatar">
               {
-              userInfo?.avatarSrc
+              userInfo.avatarSrc
               ? <Avatar 
                   style={{ backgroundColor: "orange", verticalAlign: 'middle' }}
+                  shape="square"
                   size="large"
-                  src={userInfo?.avatarSrc}
+                  src={userInfo.avatarSrc}
                 >
                 </Avatar>
               :   
@@ -98,40 +211,51 @@ export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
               }
             </div>
           </Col>
+          <Col span="12">
+            <Row className="user-name-row">
+              <div className="user-name">{userInfo?.firstName} {userInfo?.lastName}</div>
+            </Row>
+            <Row>
+              <div className="delivery-level">Delivery level {Math.floor(userInfo.experience / 10)}</div>
+            </Row>
+            <Row>
+              <div className="delivery-level">Total tips: {userInfo.tips} lv.</div>
+            </Row>
+          </Col>
+        </Row>
         
-        </Row>
-        <Row>
-          <Col offset="10" span="12">
-            <div className="user-name">{userInfo?.firstName} {userInfo?.lastName}</div>
-          </Col>
-        </Row>
-      
-        {console.log(userInfo?.experience)}
-        <Row>
-          <Col offset="10" span="6"> 
-            <div className="delivery-level">Delivery level {Math.floor(userInfo.experience / 10)}</div>
-          </Col>
-        </Row>
-        <Row>
-          <Col offset="10" span="6"> 
-            <div className="delivery-level">Total tips: {userInfo.tips} lv.</div>
-          </Col>
-        </Row>
         <Row>
           <Col offset="8" span="6">
-            <div className="experince"><Progress  percent={userInfo.experience % 10 * 10 } format={percent => `${10 - userInfo.experience % 10} experience to next level`}/></div>
+            <div className="experince">
+              <Progress  percent={userInfo.experience % 10 * 10 } format={percent => `${(10 - userInfo.experience % 10).toFixed(2)} experience to next level`}/>
+            </div>
+          </Col>
+        </Row>
+        <Row className="row">
+          <Col offset="1" span="8">
+            <h3>Recent orders</h3>
+          </Col>
+          <Col offset="4" span="8">
+            <h3>Completed orders</h3>
           </Col>
         </Row>
         <Row>
-          <Col offset="1" span="8">
+          <Col offset="1" span="11">
+            <Table
+              columns={userOrderColumns}
+              dataSource={userOrders}
+              expandedRowKeys={expandedRowKeys}
+              expandedRowRender={(order: any) => expandedRowRender(order) }
+              onExpand={onTableRowExpand}
+              rowKey="id"
+            />
+          </Col>
+          <Col offset="1" span="10">
             <Table
               columns={completedOrderColumns}
               dataSource={userInfo.completedOrders}
+              rowKey="id"
             />
-          </Col>
-        </Row>
-        <Row>
-          <Col offset="4" span="8">
           </Col>
         </Row>
       </div>

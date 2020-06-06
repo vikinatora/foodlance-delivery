@@ -22,21 +22,21 @@ export const Navigation: React.FC<INavigationProps> = () => {
     }, [])
 
     useEffect(() => {
-        if(!token) {
+        if (!token) {
             setFirstName("");
         }
     }, [token])
 
     return (
         <Row>
-            <Col span={!firstName || !token ? 20 : 19}>
+            <Col span={!firstName ? 20 : 19}>
                 <Menu mode="horizontal">
                     <Menu.Item><Link to="/">Foodlance</Link></Menu.Item>
                 </Menu>
             </Col>
-            <Col span={!firstName || !token ? 4 : 5}>
+            <Col span={!firstName ? 4 : 5}>
                 {
-                    !firstName || !token
+                    !firstName
                     ? <Menu className="rightMenu" mode="horizontal">
                         <Menu.Item ><Link to="/login">Login</Link></Menu.Item>
                         <Menu.Item ><Link to="/register">Register</Link></Menu.Item>

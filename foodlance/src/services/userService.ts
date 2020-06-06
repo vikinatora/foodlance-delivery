@@ -3,6 +3,7 @@ import { message } from "antd";
 import { IProfile } from "../models/IProfile";
 import { ProfileHelpers } from "../helpers/ProfileHelpers";
 import { ProfileModel } from "../models/Profile";
+import { IOrder } from "../models/IOrder";
 
 export class UserService {
   public static getUserId = async(): Promise<string> => {
@@ -21,7 +22,7 @@ export class UserService {
     }
   }
 
-  public static getProfile = async(): Promise<IProfile> => {
+  public static getProfile = async(): Promise<[IProfile, any[]]> => {
     try {
       const response = await axios.request({
         url: "http://localhost:5000/api/user/profile",
@@ -30,12 +31,37 @@ export class UserService {
           "X-Auth-Token": localStorage.getItem("token")
         },
       })
+      const userOrders: any[] = ProfileHelpers.mapToOrderInfo(response.data.userOrders);
       const userInfo = ProfileHelpers.mapToUserInfo(response.data.userInfo)
-      return userInfo;
+      return [userInfo, userOrders];
     }
     catch(error) {
       message.error("Failed to fetch profile info");
-      return new ProfileModel();
+      return [new ProfileModel(), []];
+    }
+  }
+
+  public static uploadAvatar = async(avatar: string) => {
+    try {
+      const response = await axios.request({
+        url: "http://localhost:5000/api/user/avatar",
+        method: "POST",
+        headers: {
+          "X-Auth-Token": localStorage.getItem("token")
+        },
+        data: {
+          avatar: avatar
+        }
+      })
+      if (response.data.success){
+        message.success("Successfully uploaded avatar");
+      } else {
+        message.error("Couldn't upload avatar.")
+      }
+    }
+    catch(error) {
+      message.error("Failed to fetch profile info");
+      return [new ProfileModel(), []];
     }
   }
 }

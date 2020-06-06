@@ -2,6 +2,15 @@
   width: 120px !important;
   height: 120px !important;
 }
+.avatar {
+  margin-right: 5px;
+}
+.user-name-row {
+  margin-bottom: 5px;
+}
 .user-name {
   font-size: 24px;
+}
+.row { 
+  margin-top: 50px;
 }
