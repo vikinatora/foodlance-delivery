@@ -9,6 +9,7 @@ import auth from "../../middleware/auth";
 import Payload from "../../types/Payload";
 import Request from "../../types/Request";
 import User, { IUser } from "../../models/User";
+import Order from "../../models/Order";
 
 const router: Router = Router();
 
@@ -89,7 +90,7 @@ router.post(
       const { avatar } = req.body;
       const user = await User.findByIdAndUpdate(req.userId, {
         $set: {
-          imageSrc: avatar
+          avatar: avatar
         }
       });
   
@@ -116,7 +117,8 @@ router.get(
         }
       })
       .populate("accepetedOrder");
-      res.send({success: true, userInfo});
+      const userOrders = await Order.find({requestor: req.userId}).populate("products");
+      res.send({success: true, userInfo, userOrders});
     }
     catch(err) {
       console.error(err.message);

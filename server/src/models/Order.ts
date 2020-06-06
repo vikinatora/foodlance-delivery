@@ -13,7 +13,9 @@ export interface IOrder extends Document {
   completed: boolean,
   sentNotification: boolean,
   requestorComplete: boolean,
-  executorComplete: boolean
+  executorComplete: boolean,
+  createdDate: Date,
+  completedDate: Date,
 }
 
 const orderSchema: Schema = new Schema({
@@ -78,6 +80,15 @@ const orderSchema: Schema = new Schema({
     type: Schema.Types.Boolean,
     required: true,
     default: false
+  },
+  createdDate: {
+    type: Schema.Types.Date,
+    required: true,
+    default: Date.now
+  },
+  completedDate: {
+    type: Schema.Types.Date,
+    required: false,
   },
 });
 

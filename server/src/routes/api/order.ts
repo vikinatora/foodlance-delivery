@@ -177,6 +177,7 @@ router.post(
           $set: {
             completed: true,
             active: false,
+            completedDate: new Date((new Date()).getTime())
           }
         }).populate("executor");
 
@@ -227,7 +228,8 @@ router.post(
         order = await Order.findByIdAndUpdate(orderId, {
           $set: {
             completed: true,
-            active: false
+            active: false,
+            completedDate: new Date((new Date()).getTime())
           }
         })
 

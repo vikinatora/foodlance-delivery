@@ -10,6 +10,7 @@ export interface IUser extends Document {
   imageSrc: string;
   acceptedOrder: any;
   completedOrders: IOrder[];
+  avatar: string;
 }
 
 const userSchema: Schema = new Schema({
@@ -59,6 +60,10 @@ const userSchema: Schema = new Schema({
     ref: "Order",
     required: false,
   }],
+  avatar: {
+    type: String,
+    required: false
+  },
 });
 
 const User: Model<IUser> = model("User", userSchema);
