@@ -6,6 +6,7 @@ import Order, { IOrder } from "../../models/Order";
 import Marker, { IMarker } from "../../models/Marker";
 import Product, { IProduct } from "../../models/Product";
 import User, { IUser } from "../../models/User";
+import mongoose from "mongoose";
 
 const router: Router = Router();
 
@@ -141,12 +142,60 @@ router.post(
           }
       }).populate("executor")
 
-      await User.findByIdAndUpdate(order.executor._id, {
-        $set: {
-          acceptedOrder: null
-        }
-      })
+      if(order.executor) {
+        await User.findByIdAndUpdate(order.executor._id, {
+          $set: {
+            acceptedOrder: null
+          }
+        })
+      }
       res.send({success: true, message: "Successfully removed order"});
+    } catch(error) {
+      console.error(error.message);
+      res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).send("Server Error");
+      res.send({success: false, message: "Couldn't cancel order"});
+    }
+  }
+)
+
+router.post(
+  "/activate",
+  auth,
+  async (req: Request, res: Response) => {
+    try {
+      const { orderId, completed } = req.body;
+      if (!completed) {
+        const order = await Order.findByIdAndUpdate(orderId, {
+          $set: {
+              executor: null,
+              active: true,
+              inProgress: false,
+            }
+        }).populate("executor")
+        res.send({ success: true, message: "Successfully reactivated order" })
+
+      } else {
+        const order = await Order.findByIdAndUpdate(orderId, {
+          $set: {
+            reactivated: true
+          }
+        });
+        
+        order._id = mongoose.Types.ObjectId();
+        order.isNew = true;
+        order.completed = false;
+        order.inProgress = false;
+        order.active = true;
+        order.reactivated = false;
+        order.createdDate = new Date((new Date()).getTime());
+        order.completedDate = null;
+        order.requestorComplete = false;
+        order.executorComplete = false;
+        order.executor = null;
+        await order.save();
+        res.send({ success: true, newOrder: order, message: "Successfully reactivated order" })
+      }
+
     } catch(error) {
       console.error(error.message);
       res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).send("Server Error");

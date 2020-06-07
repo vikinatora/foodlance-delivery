@@ -3,7 +3,6 @@ import { message } from "antd";
 import { IProfile } from "../models/IProfile";
 import { ProfileHelpers } from "../helpers/ProfileHelpers";
 import { ProfileModel } from "../models/Profile";
-import { IOrder } from "../models/IOrder";
 
 export class UserService {
   public static getUserId = async(): Promise<string> => {

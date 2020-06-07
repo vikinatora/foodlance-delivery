@@ -1,6 +1,6 @@
 import Avatar from "antd/lib/avatar";
-import React, { useState, useEffect } from "react";
-import { Row, Upload, Col, Table, Button, Badge } from "antd";
+import React, { useState, useEffect, useContext } from "react";
+import { Row, Upload, Col, Table, Button, Badge, message, notification } from "antd";
 import Progress from "antd/lib/progress"
 import { UserService } from "../../services/userService";
 import { Navigation } from "../Navigation/Navigation";
@@ -8,130 +8,17 @@ import { ProfileHelpers } from "../../helpers/ProfileHelpers";
 import { LoadingOutlined, PlusOutlined } from "@ant-design/icons";
 import { IProfile } from "../../models/IProfile";
 import { ProfileModel } from "../../models/Profile";
+import { OrderService } from "../../services/orderService";
+import { IMapOrder } from "../../models/IMapOrder";
+import cloneDeep from "lodash.clonedeep";
+import { LayerContext } from "../../context/LayerContext";
 
 interface ProfileProps {
 
 }
-const completedOrderColumns = [
-  {
-    title: 'Completed',
-    dataIndex: 'completedDate',
-    key: 'completedDate',
-  },
-  {
-    title: 'Requestor name',
-    dataIndex: 'requestorName',
-    key: 'requestorName',
-  },
-  {
-    title: 'Total price',
-    dataIndex: 'totalPrice',
-    key: 'totalPrice',
-  },
-  {
-    title: 'Delivery tip',
-    dataIndex: 'tip',
-    key: 'tip',
-  },
-];
-
-const userOrderColumns = [
-  {
-    title: 'Created',
-    dataIndex: 'createdDate',
-    key: 'createdDate',
-  },
-  {
-    title: 'Total price of order',
-    dataIndex: 'totalPrice',
-    key: 'totalPrice',
-  },
-  {
-    title: 'Delivery tip',
-    dataIndex: 'tip',
-    key: 'tip',
-  },
-  {
-    title: 'Status',
-    dataIndex: 'status',
-    key: 'status',
-    render: (_: any, order: any) => {
-      if (order.completed) {
-        return (
-          <span>
-            <Badge status="success" />
-            Completed
-          </span>
-        )
-      } else if(order.inProgress) {
-        return (
-          <span>
-            <Badge status="processing" />
-            In progress
-          </span>
-        );
-      } else if(order.active) {
-        return (
-          <span>
-            <Badge status="warning" />
-            Active
-          </span>
-        );
-      } else if (!order.active && !order.completed) {
-        return (
-          <span>
-            <Badge status="error" />
-              Removed
-          </span>
-        );
-      }
-    }
-  },
-  {
-    title: 'Actions',
-    dataIndex: 'actions',
-    key: 'actions',
-    render: (_: any, order: any) => {
-      if (order.active) {
-        if(order.inProgress) {
-          return (
-            <>
-              <Button type="primary" onClick={() => console.log(`Reactivating order ${order.id}`)}>Complete</Button>
-              <Button type="danger" onClick={() => console.log(`Reactivating order ${order.id}`)}>Deactivate</Button>
-            </>
-          )
-        } else {
-          return (
-            <Button type="danger" onClick={() => console.log(`Reactivating order ${order.id}`)}>Deactivate</Button>
-          )
-        }
-      } else {
-        return (
-          <Button type="dashed" onClick={() => console.log(`Reactivating order ${order.id}`)}>Reactivate</Button>
-        )
-      }
-    }
-  }
-];
-
-const productColumns =[{
-  title: 'Product name',
-  dataIndex: 'name',
-  key: 'name',
-},
-{
-  title: 'Quantity',
-  dataIndex: 'quantity',
-  key: 'name',
-},
-{
-  title: 'Price',
-  dataIndex: 'price',
-  key: 'price',
-}
-];
 
 export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
+  const { allOrders, setAllOrders } = useContext(LayerContext);
   const [userInfo, setUserInfo] = useState<IProfile>(new ProfileModel());
   const [userOrders, setUserOrders] = useState<any[]>([]);
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
@@ -145,6 +32,182 @@ export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
     }
     getProfileInfo()
   }, []);
+  const completedOrderColumns = [
+    {
+      title: 'Completed',
+      dataIndex: 'completedDate',
+      key: 'completedDate',
+    },
+    {
+      title: 'Requestor name',
+      dataIndex: 'requestorName',
+      key: 'requestorName',
+    },
+    {
+      title: 'Total price',
+      dataIndex: 'totalPrice',
+      key: 'totalPrice',
+    },
+    {
+      title: 'Delivery tip',
+      dataIndex: 'tip',
+      key: 'tip',
+    },
+  ];
+  
+  const userOrderColumns = [
+    {
+      title: 'Created',
+      dataIndex: 'createdDate',
+      key: 'createdDate',
+    },
+    {
+      title: 'Total price of order',
+      dataIndex: 'totalPrice',
+      key: 'totalPrice',
+    },
+    {
+      title: 'Delivery tip',
+      dataIndex: 'tip',
+      key: 'tip',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (_: any, order: any) => {
+        if (order.completed) {
+          return (
+            <span>
+              <Badge status="success" />
+              Completed
+            </span>
+          )
+        } else if(order.inProgress) {
+          return (
+            <span>
+              <Badge status="processing" />
+              In progress
+            </span>
+          );
+        } else if(order.active) {
+          return (
+            <span>
+              <Badge status="warning" />
+              Active
+            </span>
+          );
+        } else if (!order.active && !order.completed) {
+          return (
+            <span>
+              <Badge status="error" />
+                Removed
+            </span>
+          );
+        }
+      }
+    },
+    {
+      title: 'Actions',
+      dataIndex: 'actions',
+      key: 'actions',
+      render: (_: any, order: any) => {
+        if(order.reactivated) {
+          return (
+            <span>Reactivated</span>
+          )
+        } else if (order.active) {
+          if (order.inProgress) {
+            return (
+              <>
+                <Button type="primary" onClick={() => completeOrder(order.id)}>Complete</Button>
+                <Button type="danger" onClick={() => deactivateOrder(order.id)}>Deactivate</Button>
+              </>
+            )
+          } else {
+            return (
+              <Button type="danger" onClick={() => deactivateOrder(order.id)}>Deactivate</Button>
+            )
+          }
+        } else {
+          return (
+            <Button type="dashed" onClick={() => activateOrder(order.id, order.completed)}>Reactivate</Button>
+          )
+        }
+      }
+    }
+  ];
+  
+  const productColumns =[{
+    title: 'Product name',
+    dataIndex: 'name',
+    key: 'name',
+  },
+  {
+    title: 'Quantity',
+    dataIndex: 'quantity',
+    key: 'name',
+  },
+  {
+    title: 'Price',
+    dataIndex: 'price',
+    key: 'price',
+  }
+  ];
+  const completeOrder = async (orderId: string) => {
+    const result = await OrderService.completeRequestorOrder(orderId);
+    message.info(result.message)
+    if (result.success) {
+      notification.close("order-alert");
+      let clonedUserOrders = cloneDeep(userOrders);
+      let orderIndex = clonedUserOrders.findIndex(o => o.id === orderId)
+      let changedOrder = clonedUserOrders[orderIndex];
+      changedOrder.completed = true;
+
+      clonedUserOrders.splice(orderIndex, 1, changedOrder);
+      setUserOrders(clonedUserOrders);
+      
+    }
+  }
+
+  const deactivateOrder = async (orderId: string) => {
+    const result = await OrderService.removeOrder(orderId);
+    message.info(result.message)
+    if (result.success) {
+      notification.close("order-alert");
+      let clonedUserOrders = cloneDeep(userOrders);
+      let orderIndex = clonedUserOrders.findIndex(o => o.id === orderId)
+      let changedOrder = clonedUserOrders[orderIndex];
+      changedOrder.inProgress = false;
+      changedOrder.active = false;
+
+      clonedUserOrders.splice(orderIndex, 1, changedOrder);
+      setUserOrders(clonedUserOrders);
+    }
+  }
+
+  const activateOrder = async (orderId: string, completed: boolean) => {
+    const result = await OrderService.activateOrder(orderId, completed);
+    message.info(result.message)
+    if (result.success) {
+      notification.close("order-alert");
+      let clonedUserOrders = cloneDeep(userOrders);
+      if(!result.newOrder) {
+        let orderIndex = clonedUserOrders.findIndex(o => o.id === orderId)
+        let changedOrder = clonedUserOrders[orderIndex];
+        changedOrder.active = true;
+        clonedUserOrders.splice(orderIndex, 1, changedOrder);
+      } else {
+        let orderIndex = clonedUserOrders.findIndex(o => o.id === orderId)
+        let changedOrder = clonedUserOrders[orderIndex];
+        changedOrder.reactivated = true;
+        clonedUserOrders.splice(orderIndex, 1, changedOrder);
+        const mappedOrder = ProfileHelpers.mapToOrderInfo([result.newOrder]);
+        clonedUserOrders.push(mappedOrder[0]);
+      }
+      setUserOrders(clonedUserOrders);
+    }
+  }
 
   const expandedRowRender =  (order: any) => {
     const products: any[] = userOrders.find(o => o.id === order.id).products;
@@ -165,13 +228,14 @@ export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
       return;
     }
     if (info.file.status === 'done') {
-      // Get this url from response in real world.
       ProfileHelpers.getBase64(info.file.originFileObj, (imageUrl: string) => {
         UserService.uploadAvatar(imageUrl);
+
         setUserInfo(prev => ({
           ...prev,
           avatarSrc: imageUrl
         }));
+
         setLoading(false);
       });
     }

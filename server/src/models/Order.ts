@@ -14,6 +14,7 @@ export interface IOrder extends Document {
   sentNotification: boolean,
   requestorComplete: boolean,
   executorComplete: boolean,
+  reactivated: boolean,
   createdDate: Date,
   completedDate: Date,
 }
@@ -57,6 +58,11 @@ const orderSchema: Schema = new Schema({
     default: true
   },
   inProgress: {
+    type: Schema.Types.Boolean,
+    required: true,
+    default: false
+  },
+  reactivated: {
     type: Schema.Types.Boolean,
     required: true,
     default: false

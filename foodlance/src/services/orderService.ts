@@ -109,6 +109,30 @@ export class OrderService {
     }
   }
 
+  public static async activateOrder(orderId: string, completed: boolean) {
+    try {
+      const result = await axios({
+        url: "http://localhost:5000/api/order/activate",
+        method: "POST",
+        headers: {
+          "X-Auth-Token": localStorage.getItem("token")
+        },
+        data: {
+          orderId: orderId,
+          completed: completed
+        }
+      })
+      return result.data;
+    }
+    catch(error) {
+      return {
+        success: false,
+        message: "Unexpected error occured. Please"
+      };
+    }
+  }
+
+
   public static async completeExecutorOrder(orderId: string) {
     try {
       const result = await axios({

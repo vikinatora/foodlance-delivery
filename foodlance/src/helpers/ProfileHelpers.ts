@@ -58,6 +58,7 @@ export class ProfileHelpers {
           inProgress: order.inProgress,
           completed: order.completed,
           active: order.active,
+          reactivated: order.reactivated,
           createdDate: ProfileHelpers.mapToNormalDate(order.createdDate),
           products: ProfileHelpers.mapToProducts(order.products)
         };
