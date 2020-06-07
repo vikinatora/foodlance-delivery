@@ -1,9 +1,10 @@
 import React, { useEffect, useContext } from 'react';
 import INavigationProps from './INavigationProps';
-import { Menu, Col, Row, message } from 'antd';
+import { Menu, Col, Row, message, notification } from 'antd';
 import { Link } from 'react-router-dom';
 import { LayerContext } from '../../context/LayerContext';
 import { LoginService } from '../../services/loginService';
+import { UserOutlined, LogoutOutlined, LoginOutlined, UserAddOutlined } from '@ant-design/icons';
 
 export const Navigation: React.FC<INavigationProps> = () => {
     const { token, setToken, firstName, setFirstName } = useContext(LayerContext)
@@ -29,25 +30,28 @@ export const Navigation: React.FC<INavigationProps> = () => {
 
     return (
         <Row>
-            <Col span={!firstName ? 20 : 19}>
+            <Col span={!firstName ? 19 : 19}>
                 <Menu mode="horizontal">
-                    <Menu.Item><Link to="/">Foodlance</Link></Menu.Item>
+                    <Menu.Item><Link to="/">Map</Link></Menu.Item>
                 </Menu>
             </Col>
             <Col span={!firstName ? 4 : 5}>
                 {
                     !firstName
                     ? <Menu className="rightMenu" mode="horizontal">
-                        <Menu.Item ><Link to="/login">Login</Link></Menu.Item>
-                        <Menu.Item ><Link to="/register">Register</Link></Menu.Item>
+                        <Menu.Item ><Link to="/login"><LoginOutlined /> Login</Link></Menu.Item>
+                        <Menu.Item ><Link to="/regi ster"><UserAddOutlined /> Register</Link></Menu.Item>
                     </Menu>
                     : <Menu className="rightMenu" mode="horizontal">
-                        <Menu.Item ><Link to="/profile">Hello, {firstName}</Link></Menu.Item>
+                        <Menu.Item ><Link to="/profile">
+                            <UserOutlined /> Profile
+                        </Link></Menu.Item>
                         <Menu.Item ><Link to="#" onClick={() => {
                             message.success({content: "Successfully logged out!", duration: 1})
                             localStorage.removeItem("token");
-                            setToken("")
-                        }}>Logout</Link></Menu.Item>
+                            notification.close("order-alert");
+                            setToken("");
+                        }}><LogoutOutlined /> Logout</Link></Menu.Item>
                     </Menu>
                 }
             </Col>

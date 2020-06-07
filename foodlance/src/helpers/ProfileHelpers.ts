@@ -28,12 +28,17 @@ export class ProfileHelpers {
       firstName: info.firstName,
       lastName: info.lastName,
       tips: +info.tips,
-      completedOrders: []
     };
 
-    if (info.completedOrders && info.completedOrders.length) {
-      info.completedOrders.forEach((order: any) => {
-        mappedInfo.completedOrders.push({
+    return mappedInfo;
+  }
+
+  public static mapToCompletedOrderInfo = (orders: any): any[] => {
+    const mappedOrders: any[] = [];
+
+    if (orders && orders.length) {
+      orders.forEach((order: any) => {
+        mappedOrders.push({
           id: order._id,
           tip: `${order.tip} lv. - ${order.tipPercentage * 100} %`,
           totalPrice: `${order.totalPrice} lv.`,
@@ -42,11 +47,11 @@ export class ProfileHelpers {
         })
       });
     }
-    console.log(mappedInfo);
-    return mappedInfo;
+    return mappedOrders;
+
   }
 
-  public static mapToOrderInfo = (orders: any): any[] => {
+  public static mapToRequestedOrderInfo = (orders: any): any[] => {
     const mappedOrders: any[] = [];
 
     if (orders && orders.length) {

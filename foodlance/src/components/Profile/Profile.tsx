@@ -1,5 +1,5 @@
 import Avatar from "antd/lib/avatar";
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import { Row, Upload, Col, Table, Button, Badge, message, notification } from "antd";
 import Progress from "antd/lib/progress"
 import { UserService } from "../../services/userService";
@@ -9,33 +9,35 @@ import { LoadingOutlined, PlusOutlined } from "@ant-design/icons";
 import { IProfile } from "../../models/IProfile";
 import { ProfileModel } from "../../models/Profile";
 import { OrderService } from "../../services/orderService";
-import { IMapOrder } from "../../models/IMapOrder";
 import cloneDeep from "lodash.clonedeep";
-import { LayerContext } from "../../context/LayerContext";
 
 interface ProfileProps {
 
 }
 
 export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
-  const { allOrders, setAllOrders } = useContext(LayerContext);
   const [userInfo, setUserInfo] = useState<IProfile>(new ProfileModel());
-  const [userOrders, setUserOrders] = useState<any[]>([]);
+  const [requestedOrders, setRequestedOrders] = useState<any[]>([]);
+  const [completedOrders, setCompletedOrders] = useState<any[]>([])
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([])
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const getProfileInfo = async () => {
-      const [userInfo, userOrders] = await UserService.getProfile();
+      const [userInfo, requestedOrders, completedOrders] = await UserService.getProfile();
       setUserInfo(userInfo);
-      setUserOrders(userOrders);
+      setRequestedOrders(requestedOrders);
+      setCompletedOrders(completedOrders);
     }
     getProfileInfo()
-  }, []);
-  const completedOrderColumns = [
+  }, []);  
+  
+  const completedOrderColumns: any = [
     {
       title: 'Completed',
       dataIndex: 'completedDate',
+      sorter: (a:any, b:any) => a.completedDate - b.completedDate,
+      sortDirections: ['descend', 'ascend'],
       key: 'completedDate',
     },
     {
@@ -53,13 +55,16 @@ export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
       dataIndex: 'tip',
       key: 'tip',
     },
+    
   ];
   
-  const userOrderColumns = [
+  const userOrderColumns: any = [
     {
       title: 'Created',
       dataIndex: 'createdDate',
       key: 'createdDate',
+      sorter: (a:any, b:any) => +(a.totalPrice - b.totalPrice),
+      sortDirections: ['descend', 'ascend'],
     },
     {
       title: 'Total price of order',
@@ -111,6 +116,7 @@ export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
       title: 'Actions',
       dataIndex: 'actions',
       key: 'actions',
+      className: "actions-column",
       render: (_: any, order: any) => {
         if(order.reactivated) {
           return (
@@ -159,13 +165,13 @@ export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
     message.info(result.message)
     if (result.success) {
       notification.close("order-alert");
-      let clonedUserOrders = cloneDeep(userOrders);
+      let clonedUserOrders = cloneDeep(requestedOrders);
       let orderIndex = clonedUserOrders.findIndex(o => o.id === orderId)
       let changedOrder = clonedUserOrders[orderIndex];
       changedOrder.completed = true;
 
       clonedUserOrders.splice(orderIndex, 1, changedOrder);
-      setUserOrders(clonedUserOrders);
+      setRequestedOrders(clonedUserOrders);
       
     }
   }
@@ -175,14 +181,14 @@ export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
     message.info(result.message)
     if (result.success) {
       notification.close("order-alert");
-      let clonedUserOrders = cloneDeep(userOrders);
+      let clonedUserOrders = cloneDeep(requestedOrders);
       let orderIndex = clonedUserOrders.findIndex(o => o.id === orderId)
       let changedOrder = clonedUserOrders[orderIndex];
       changedOrder.inProgress = false;
       changedOrder.active = false;
 
       clonedUserOrders.splice(orderIndex, 1, changedOrder);
-      setUserOrders(clonedUserOrders);
+      setRequestedOrders(clonedUserOrders);
     }
   }
 
@@ -191,7 +197,7 @@ export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
     message.info(result.message)
     if (result.success) {
       notification.close("order-alert");
-      let clonedUserOrders = cloneDeep(userOrders);
+      let clonedUserOrders = cloneDeep(requestedOrders);
       if(!result.newOrder) {
         let orderIndex = clonedUserOrders.findIndex(o => o.id === orderId)
         let changedOrder = clonedUserOrders[orderIndex];
@@ -202,15 +208,15 @@ export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
         let changedOrder = clonedUserOrders[orderIndex];
         changedOrder.reactivated = true;
         clonedUserOrders.splice(orderIndex, 1, changedOrder);
-        const mappedOrder = ProfileHelpers.mapToOrderInfo([result.newOrder]);
+        const mappedOrder = ProfileHelpers.mapToCompletedOrderInfo([result.newOrder]);
         clonedUserOrders.push(mappedOrder[0]);
       }
-      setUserOrders(clonedUserOrders);
+      setRequestedOrders(clonedUserOrders);
     }
   }
 
   const expandedRowRender =  (order: any) => {
-    const products: any[] = userOrders.find(o => o.id === order.id).products;
+    const products: any[] = requestedOrders.find(o => o.id === order.id).products;
 
     return <Table columns={productColumns} dataSource={products} pagination={false} />;
   };
@@ -288,14 +294,14 @@ export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
           </Col>
         </Row>
         
-        <Row>
+        <Row className="level-row">
           <Col offset="8" span="6">
             <div className="experince">
               <Progress  percent={userInfo.experience % 10 * 10 } format={percent => `${(10 - userInfo.experience % 10).toFixed(2)} experience to next level`}/>
             </div>
           </Col>
         </Row>
-        <Row className="row">
+        <Row className="tables-labels-row">
           <Col offset="1" span="8">
             <h3>Recent orders</h3>
           </Col>
@@ -306,8 +312,9 @@ export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
         <Row>
           <Col offset="1" span="11">
             <Table
+              pagination={{ defaultPageSize: 4}}
               columns={userOrderColumns}
-              dataSource={userOrders}
+              dataSource={requestedOrders}
               expandedRowKeys={expandedRowKeys}
               expandedRowRender={(order: any) => expandedRowRender(order) }
               onExpand={onTableRowExpand}
@@ -316,8 +323,9 @@ export const Profile: React.FC<ProfileProps> = (props: ProfileProps) => {
           </Col>
           <Col offset="1" span="10">
             <Table
+              pagination={{ defaultPageSize: 4}}
               columns={completedOrderColumns}
-              dataSource={userInfo.completedOrders}
+              dataSource={completedOrders}
               rowKey="id"
             />
           </Col>

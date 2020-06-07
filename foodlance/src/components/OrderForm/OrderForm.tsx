@@ -10,6 +10,7 @@ import { LayerContext } from '../../context/LayerContext';
 import { IMapOrder } from '../../models/IMapOrder';
 import { OrderHelpers } from '../../helpers/OrderHelper';
 import { OrderService } from '../../services/orderService';
+import { FormInstance } from 'antd/lib/form';
 
 interface OrderFormProps {
   showOrderForm: boolean;
@@ -34,27 +35,35 @@ const OrderForm: React.FC<OrderFormProps> = (props: OrderFormProps) => {
   const [order, setOrder] = useState<Order>(new Order());
   const [form] = Form.useForm();
 
-  const handleSubmit = async() => {
-    message.info("Submitting order...");
-    try {
-      const token = localStorage.getItem("token");
-      if (token) {
-        const result = await OrderService.createOrder(order, point, token);
-        if (result.success) {
-          const clonedMarkers: IMapOrder[] = cloneDeep(allOrders);
-          clonedMarkers.push(OrderHelpers.mapDbToClientModel(result.newOrder));
-          setAllOrders(clonedMarkers);
-          setPoint([0,0]);
-          props.setShowOrderForm(false);
+  const handleSubmit = async(form: FormInstance) => {
+    form
+    .validateFields()
+    .then( async values => {
+      form.resetFields();
+      message.info({ content: "Submitting order...", duration: 2});
+      try {
+        const token = localStorage.getItem("token");
+        if (token) {
+          const result = await OrderService.createOrder(order, point, token);
+          if (result.success) {
+            const clonedMarkers: IMapOrder[] = cloneDeep(allOrders);
+            clonedMarkers.push(OrderHelpers.mapDbToClientModel(result.newOrder));
+            setAllOrders(clonedMarkers);
+            setPoint([0,0]);
+            props.setShowOrderForm(false);
+          }
+          message.success({content: "Successfully created order! You will be notified when someone accepts it.", duration: 2});
+        } else {
+          message.error("Missing authentication token. Strange....");
         }
-        message.success({content: "Successfully created order! You will be notified when someone accepts it.", duration: 2});
-      } else {
-        message.error("Missing authentication token. Strange....");
+      } catch(error) {
+        message.error("Unexpected server error occurred. Please try again later.");
       }
-    } catch(error) {
-      message.error("Unexpected server error occurred. Please try again later.");
+      })
+      .catch(info => {
+        console.log('Validate Failed:', info);
+      });
     }
-  }
 
   const calculateNewTotal = (order: Order, clonedOrder: Order) => {
     let newTotal = 0;
@@ -126,23 +135,13 @@ const OrderForm: React.FC<OrderFormProps> = (props: OrderFormProps) => {
     return (
       <div>
         <Modal
-            title="Order form"
+            title={"Order form"}
             visible={props.showOrderForm}
-            onOk={() => {
-              form
-                .validateFields()
-                .then(values => {
-                  form.resetFields();
-                  handleSubmit();
-                })
-                .catch(info => {
-                  console.log('Validate Failed:', info);
-                });
-            }}
-            onCancel={cancelOrder}
+            footer={null}
           >
             <Form 
               form={form}
+              
             >
             {order.products.map((product) => (
               <div key={product.id} className="product-info">
@@ -217,7 +216,7 @@ const OrderForm: React.FC<OrderFormProps> = (props: OrderFormProps) => {
             </Row>
             <Row className="">
               <Col span={3} offset={15}>
-                <div className="tip-row"><span className="tip-label">Products:</span></div>
+                <div className="tip-row total-sum-row"><span className="tip-label">Products:</span></div>
               </Col>
               <Col span={6}>
               <Input
@@ -229,7 +228,7 @@ const OrderForm: React.FC<OrderFormProps> = (props: OrderFormProps) => {
             </Row>
             <Row className="">
               <Col span={2} offset={10}>
-                <div className="tip-row"><span className="tip-label">Tip:</span></div>
+                <div className="tip-row tip-sum-row"><span className="tip-label">Tip:</span></div>
               </Col>
               <Col span={6} >
                 <Select className="select-tip" defaultValue={0.15}  onChange={handleTipSelectChange}>
@@ -265,6 +264,16 @@ const OrderForm: React.FC<OrderFormProps> = (props: OrderFormProps) => {
               />
               </Col>
             </Row>
+              <Row>
+                <Col className="buttons-col" span={24} >
+                  <Button className={"cancel-button"} type="primary" onClick={() => cancelOrder()}>
+                    Cancel
+                  </Button>
+                  <Button onClick={() => {handleSubmit(form)}} >
+                    Place order
+                  </Button>
+                </Col>
+              </Row>            
             </Form>
           </Modal>
       </div>

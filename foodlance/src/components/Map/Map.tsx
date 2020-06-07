@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { Map, TileLayer, LayerGroup, Marker, Tooltip } from 'react-leaflet';
+import { Map, TileLayer, LayerGroup, Marker } from 'react-leaflet';
 import { LatLngTuple } from 'leaflet';
 import "./MapStyles.css";
 import { LayerContext } from '../../context/LayerContext';
@@ -26,8 +26,9 @@ export const LeafletMap:React.FC = () => {
 
   useEffect(() => {
     const getUserId = async () => {
-      const id = await UserService.getUserId();
-      setUserId(id);
+      const userId = await UserService.getUserId();
+      setUserId(userId);
+      addNotificationListener(userId)
     };
 
     const getUserLocation = () => {
@@ -55,26 +56,42 @@ export const LeafletMap:React.FC = () => {
     getToken();
     getUserLocation();
     getUserId();
-    addNotificationListener()
   }, [])
-  
-  const showAcceptedOrderAlert = async (listener?: NodeJS.Timeout) => {
-    let showedAlert = false;
-    const notifications = await NotificationService.checkForNotification();
-    if (notifications && notifications.orders && notifications.orders.length) {
-      notifications.orders.forEach((order: any) => {
-        if (order.requestor === notifications.requestorId) {
+
+  const addNotificationListener = async (userId: string) => {
+    const showedRequestor = await alertRequestor(userId);
+    if (!showedRequestor) {
+      const listener = setInterval(async () => {
+        await alertRequestor(userId, listener);
+      }, 3000)
+    }
+
+    const showedExecutor = await alertExecutor(userId);
+    if (!showedExecutor) {
+      const listener = setInterval(async () => {
+        await alertExecutor(userId, listener);
+      }, 3000)
+    }
+  }
+
+  const alertRequestor = async (userId: string, listener?: NodeJS.Timeout) => {
+    let showedRequestorAlert = false;
+
+    const { requesterOrders } = await NotificationService.checkForNotification();
+    if (requesterOrders && requesterOrders.length) {
+      requesterOrders.forEach((order: any) => {
+        if (order.requestor === userId) {
           if (listener) {
             clearInterval(listener);
           }
           notification.close("order-alert");
           notification.open({
+            key: "order-alert",
             duration: 0,
             closeIcon: <div></div>,
             message: `Your order has been accepted by ${order.executor.firstName} ${order.executor.lastName}`,
             description: <>
               <OrderCountdown
-                key={"order-alert"}
                 isExecutor={false}
                 order={order}
                 deliveryMinutes={20}
@@ -83,12 +100,44 @@ export const LeafletMap:React.FC = () => {
               />
             </>
           });
-          showedAlert =  true;
+          showedRequestorAlert =  true;
         }
       });
-    }
-    return showedAlert;
+    }   
+    return showedRequestorAlert;
   }
+
+  const alertExecutor = async (userId: string, listener?: NodeJS.Timeout) => {
+    let showedExecutorAlert = false;
+    const { executorOrders } = await NotificationService.checkForNotification();
+
+    if (executorOrders && executorOrders.length) {
+      executorOrders.forEach((order: any) => {
+        if (order.executor === userId) {
+          notification.open({
+            duration: 0,
+            key: "order-alert",
+            message: `Successfully accepted order for ${order.requestor.firstName} ${order.requestor.lastName}`,
+            description: <>
+              <OrderCountdown
+                isExecutor={true}
+                order={order}
+                deliveryMinutes={20}
+                onCancelClick={() => cancelOrder(order)}
+                onCompleteClick={() => {
+                  completeExecutorOrder(order._id)
+                }}
+              />
+            </>
+          });
+          showedExecutorAlert = true;
+        }
+      })
+    }
+   
+    return showedExecutorAlert;
+  }
+
 
   const completeRequestorOrder  = async (orderId: string) => {
     const result = await OrderService.completeRequestorOrder(orderId);
@@ -99,6 +148,20 @@ export const LeafletMap:React.FC = () => {
         let clonedOrders: IMapOrder[] = cloneDeep(allOrders);
         const orderIndex = clonedOrders.map(o => o.order.id).indexOf(orderId);
         let changedOrder = clonedOrders.filter(o => o.order.id === orderId)[0];
+        clonedOrders.splice(orderIndex, 1);
+        setAllOrders(clonedOrders);
+      }
+    }
+  };
+
+  const completeExecutorOrder  = async (orderId: string) => {
+    const result = await OrderService.completeExecutorOrder(orderId);
+    message.info(result.message)
+    if(result.success) {
+      notification.close("order-alert");
+      if (result.fullyCompleted) {
+        let clonedOrders: IMapOrder[] = cloneDeep(allOrders);
+        const orderIndex = clonedOrders.map(o => o.order.id).indexOf(orderId);
         clonedOrders.splice(orderIndex, 1);
         setAllOrders(clonedOrders);
       }
@@ -122,14 +185,6 @@ export const LeafletMap:React.FC = () => {
     }
   }
 
-  const addNotificationListener = async () => {
-    const hasNotification = await showAcceptedOrderAlert();
-    if (!hasNotification) {
-      const listener = setInterval(async () => {
-        await showAcceptedOrderAlert(listener);
-      }, 3000)
-    }
-  }
 
   
    return (

@@ -21,7 +21,7 @@ export class UserService {
     }
   }
 
-  public static getProfile = async(): Promise<[IProfile, any[]]> => {
+  public static getProfile = async(): Promise<[IProfile, any[], any[]]> => {
     try {
       const response = await axios.request({
         url: "http://localhost:5000/api/user/profile",
@@ -30,13 +30,14 @@ export class UserService {
           "X-Auth-Token": localStorage.getItem("token")
         },
       })
-      const userOrders: any[] = ProfileHelpers.mapToOrderInfo(response.data.userOrders);
+      const requestedOrders: any[] = ProfileHelpers.mapToRequestedOrderInfo(response.data.requestedOrders);
+      const completedOrders: any[] = ProfileHelpers.mapToCompletedOrderInfo(response.data.completedOrders);
       const userInfo = ProfileHelpers.mapToUserInfo(response.data.userInfo)
-      return [userInfo, userOrders];
+      return [userInfo, requestedOrders, completedOrders];
     }
     catch(error) {
       message.error("Failed to fetch profile info");
-      return [new ProfileModel(), []];
+      return [new ProfileModel(), [], []];
     }
   }
 

@@ -22,7 +22,7 @@ const MapButtons: React.FC<MapButtonProps> = (props: MapButtonProps) => {
       } }
       >{!activate ? "New delivery point" : "Cancel new delivery"}</button>
       { 
-        activate && point
+        activate && point && token
         ? <button className="confirmButton" onClick={() => props.setShowOrderForm(true)}>Confirm place of order</button>
         : null
       }

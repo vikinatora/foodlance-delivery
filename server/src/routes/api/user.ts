@@ -9,7 +9,7 @@ import auth from "../../middleware/auth";
 import Payload from "../../types/Payload";
 import Request from "../../types/Request";
 import User, { IUser } from "../../models/User";
-import Order from "../../models/Order";
+import Order, { IOrder } from "../../models/Order";
 
 const router: Router = Router();
 
@@ -109,16 +109,24 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const userInfo = await User.findById(req.userId)
-      .populate({
-        path: "completedOrders",
-        populate: {
-          path: "requestor",
-          model: "User"
-        }
-      })
       .populate("accepetedOrder");
-      const userOrders = await Order.find({requestor: req.userId}).populate("products");
-      res.send({success: true, userInfo, userOrders});
+
+      const complOrders = await Order
+        .find({executor: req.userId, completed: true})
+        .populate("requestor");
+
+      const completedOrders = complOrders.sort((a:IOrder, b:IOrder) => {
+        return +new Date(b.createdDate) - +new Date(a.createdDate);
+      });
+
+      const orders = await Order
+        .find({requestor: req.userId})
+        .populate("products")
+      const requestedOrders = orders.sort((a:IOrder, b:IOrder) => {
+        return +new Date(b.createdDate) - +new Date(a.createdDate);
+      });
+
+      res.send({success: true, userInfo, requestedOrders: requestedOrders, completedOrders: completedOrders});
     }
     catch(err) {
       console.error(err.message);

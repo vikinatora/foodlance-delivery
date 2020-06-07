@@ -30,3 +30,22 @@
 .select-tip{
   width: 110px ;
 }
+.anticon-plus {
+  margin-top: 6px;
+}
+.total-sum-row {
+  position: relative;
+  right: 4px;
+}
+.tip-sum-row {
+  position: relative;
+  top: 3px;
+  left: 10px;
+}
+.cancel-button {
+  margin-right: 10px;
+}
+.buttons-col {
+  text-align: right;
+  margin: 30px 8px -8px
+}

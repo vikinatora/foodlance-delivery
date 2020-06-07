@@ -32,11 +32,10 @@ export const OrderInfoPopup: React.FC<OrderInfoPopupProps> = (props: OrderInfoPo
         setAllOrders(clonedOrders);
         notification.open({
           duration: 0,
-          // closeIcon: <div></div>,
+          key: "order-alert",
           message: `Successfully accepted order for ${props.order.requestor.firstName} ${props.order.requestor.lastName}`,
           description: <>
             <OrderCountdown
-              key="order-alert"
               isExecutor={true}
               order={props.order}
               deliveryMinutes={20}

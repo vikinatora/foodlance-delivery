@@ -41,7 +41,11 @@ export class NotificationService {
     }
   }
 
-  public static showAlert(order: any) {
+  public static complete(order: any) {
+    
+  }
+
+  public static showExecutorAcceptedAlert() {
     
   }
 }
