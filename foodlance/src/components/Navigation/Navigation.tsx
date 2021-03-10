@@ -40,7 +40,7 @@ export const Navigation: React.FC<INavigationProps> = () => {
                     !firstName
                     ? <Menu className="rightMenu" mode="horizontal">
                         <Menu.Item ><Link to="/login"><LoginOutlined /> Login</Link></Menu.Item>
-                        <Menu.Item ><Link to="/regi ster"><UserAddOutlined /> Register</Link></Menu.Item>
+                        <Menu.Item ><Link to="/register"><UserAddOutlined /> Register</Link></Menu.Item>
                     </Menu>
                     : <Menu className="rightMenu" mode="horizontal">
                         <Menu.Item ><Link to="/profile">

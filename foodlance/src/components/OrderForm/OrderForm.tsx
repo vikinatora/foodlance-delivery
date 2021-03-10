@@ -216,7 +216,7 @@ const OrderForm: React.FC<OrderFormProps> = (props: OrderFormProps) => {
             </Row>
             <Row className="">
               <Col span={3} offset={15}>
-                <div className="tip-row total-sum-row"><span className="tip-label">Products:</span></div>
+                <div className="tip-row total-sum-row"><span className="tip-label">Product:</span></div>
               </Col>
               <Col span={6}>
               <Input

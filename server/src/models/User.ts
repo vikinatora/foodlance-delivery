@@ -52,7 +52,7 @@ const userSchema: Schema = new Schema({
   },
   avatarSrc: {
     type: String,
-    required: true,
+    required: false,
     default: ""
   },
   completedOrders: [{
